@@ -1,0 +1,1896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <script src="data/data.js"></script>
+  <script src="libs/jquery-2.1.4.min.js"></script>
+  <script src="libs/bootstrap.min.js"></script>
+  <script src="libs/jquery.ztree.all.js"></script>
+  <script src="libs/moment.js"></script>
+  <script src="libs/echarts-4.1.0.min.js"></script>
+  <script src="libs/common.js"></script>
+  <link rel="stylesheet" href="css/BMcommon.css">  
+  <link rel="stylesheet" href="css/bootstrap.css">
+  <link rel="stylesheet" href="fonts/iconfont.css">
+</head>
+<body>
+  <div class="BMmoduleWrap">
+    <div class="BMmoduleNav">
+      <div class="BMNavOverview">
+        <div class="BMNavTitle"><div id="btnNavToggle" class="iconfont icon-gengduo"></div>Executive View</div>
+        <div class="BMOverviewList">
+          <div class="BMOverviewItem active" data-type="energy">
+            <span>Energy</span>
+  
+            <span class="iconfont icon-guolv filter"></span>
+          </div>
+          <div class="BMOverviewItem" data-type="EUI">
+            <span>EUI</span>
+     
+            <span class="iconfont icon-guolv filter"></span>
+          </div>
+          <div class="BMfilterPlane">
+            <div class="btnFilter">
+              <span class="iconfont icon-gou1"></span>
+            </div>
+            <div class="BMfilterPlaneCtn"></div>
+          </div>
+        </div>
+      </div>
+      <div class="BMNavManagerList">
+        <div class="BMNavTitle">Manager View</div>
+        <div id="BMManagerTree"></div>
+      </div>
+    </div>
+    <div class="BMContainer"></div>
+  </div>
+</body>
+</html>
+
+  <script>
+    $('#sideNavComponent').addClass('bm-wide bm-navHide');
+    $('.BMNavTitle').click(()=>{
+      $('#sideNavComponent').toggleClass('bm-navHide')
+    })
+    this.onClose = ()=>{
+      $('#sideNavComponent').removeClass('bm-wide bm-navHide');
+    }    
+    let I18n = {};
+    I18n.type = "en";
+    const typeColor = {
+          "Residential": "#0033a0",
+          "Commercial": "#01a3e1",
+          "Mall": "#efdf02",
+          "Industrial": "#F56B38",
+          "Rental": "#00B176",
+          "Other": "#EC0868",
+          "Residential(gov)": "#3752E6"
+        }
+    let preRequest = {
+      requestArr: [],
+      abort: () => {
+        if (this.requestArr.length > 0) {
+          this.requestArr.forEach(item => {
+            item.abort();
+          })
+        }
+      }
+    }
+    let UTIL = {
+          number: {
+              format: data => {
+                  if (isNaN(data)) {
+                      return "--";
+                  } else {
+                      return parseFloat(data).toLocaleString();
+                  }
+              },
+              toFixed: data => {
+                  if (isNaN(data)) {
+                      return "--";
+                  } else {
+                      let num = Math.abs(parseFloat(data));
+                      if (num < 1) {
+                          return parseFloat(num.toFixed(2)).toLocaleString();
+                      } else if (num < 10) {
+                          return parseFloat(num.toFixed(1)).toLocaleString();
+                      } else {
+                          return parseFloat(num.toFixed(0)).toLocaleString();
+                      }
+                  }
+              }
+          },
+          math: {
+              sum: data => {
+                  function sum(value) {
+                      let result = 0;
+                      if (value instanceof Array) {
+                          value.forEach(item => {
+                              result += sum(item);
+                          });
+                      } else if (!isNaN(parseFloat(value))) {
+                          result = parseFloat(value);
+                      }
+                      return result;
+                  }
+                  return sum(data);
+              }
+          }
+      };
+    class main {
+      constructor() {
+        this.container = undefined;
+        this.module = {
+          "energy": {
+            cls: Energy
+          },
+          "EUI": {
+            cls: EUI
+          },
+          "area": {
+            cls: District
+          }
+        }
+        this.filterType = {
+            "area": [],
+            "type": [],
+            "category": [],
+            "HVAC": [],
+            "developer": []
+          },
+        this.nowTime = new Date("2018-05-01 00:00:00");
+        this.predictTime = new Date("2019-05-01 00:00:00");
+        this.store = undefined;
+      }
+      get util(){
+        return UTIL
+      }
+      show() {
+        this.container = $(".BMContainer");
+        this.navCtn = $(".BMmoduleNav");
+        this.store = bmData;
+        this.init();
+      }
+      init() {
+        let len = 12;
+        bmData.map(v => {
+          v.history_2015 = v.energy.filter((element, index, array) => index < len);
+          v.history = v.energy.filter((element, index, array) => index < 25 && index > len);
+          v.real = v.energy.filter((element, index, array) => index >= array.length - len);
+        })
+        this.initTree();
+        this.attachEvent();
+        //默认显示第一个
+        let e = document.createEvent("MouseEvents");
+        e.initEvent("click", true, true);
+        document.querySelector('.BMmoduleNav .BMOverviewItem').dispatchEvent(e)
+      }
+      initFilterPlane() {
+            let filterPlane = this.navCtn.find(".BMfilterPlaneCtn");
+            filterPlane.empty();
+            Object.keys(this.filterType).forEach(item => {
+              this.filterType[item] = [...new Set(bmData.map(v => v[item]))];
+            })
+            this.filterType["age"] = ["0~10", "11~20", "21~30", "31~40", "41~50"];
+            for (let key in this.filterType) {
+              if (this.filterType[key].length > 0) {
+                let optionDom = `<div class="divBMfilterTitle">${key}</div><div class="filterOptionGroup">`;
+                this.filterType[key].forEach(v => {
+                  if(v){
+                    optionDom +=
+                    `<label class="bm-checkbox-wrapper">
+                      <span class="bm-checkbox ${key != "HVAC"?"bm-checkbox-checked":""}" data-type="${key}" data-name="${v}">
+                        <input type="checkbox" class="bm-checkbox-input" value="${v}">
+                        <span class="bm-checkbox-inner"></span>
+                      </span><span>${v}</span></label>`;              
+                  }
+                })
+                optionDom += `</div>`;
+                filterPlane.append(optionDom);
+              }
+            }
+          }
+      initTree() {
+        let $BMManagerTree = this.navCtn.find("#BMManagerTree");
+        let pId = {},
+          pIdName = [];
+        bmData.forEach(v => {
+          if (!pId[v.area]) {
+            pId[v.area] = 1;
+            pIdName.push({
+              "area": 0,
+              "name_zh": v.area,
+              "name_en": v.area,
+            });
+          } else {
+            pId[v.area]++;
+          }
+        })
+        //排序
+        pIdName = pIdName.sort((a,b)=>{return a.name_en.charAt(a.name_en.length-2) - b.name_en.charAt(b.name_en.length-2)});
+        let treeData = [...bmData.concat(pIdName)];
+        let keyName = I18n.type == "zh" ? "name_zh" : "name_en";
+        this.setting = {
+          view: {
+            addDiyDom: null,
+            showLine: false,
+            dblClickExpand: false,
+            autoCancelSelected: true,
+            showIcon: true,
+            selectedMulti: false
+          },
+          data: {
+            keep: {
+              leaf: true,
+              parent: true
+            },
+            key: {
+              name: keyName,
+            },
+            simpleData: {
+              enable: true,
+              pIdKey: "area",
+              idKey: keyName,
+            }
+          },
+          edit: {
+            enable: true,
+            showRemoveBtn: false,
+            showRenameBtn: false
+          },
+          callback: {
+            // onNodeCreated: this.onNodeCreated.bind(this),
+            onClick: this.onNodeClick.bind(this)
+          }
+        };
+        this.instance = $.fn.zTree.init($BMManagerTree, this.setting, treeData);
+      }
+      onNodeClick(event, treeId, treeNode, flag) {
+        if (flag == 0) {
+          this.cancelGroup(treeNode);
+        }
+        this.instance.expandNode(treeNode);
+        this.selectedNodes = this.instance.getSelectedNodes();
+        if (!this.selectedNodes[0].isParent) {
+          $(this.navCtn).find(".active").removeClass("active");
+          $(this.navCtn).find(".BMfilterPlane").removeClass("selected");
+          $("#" + treeNode.tId).addClass("active");
+          this.renderCurModule("area");
+        } else {
+          this.selectedDistrict = this.selectedNodes;
+        }
+      }
+      cancelGroup(treeNode) {
+        if (!treeNode.isParent) {
+          return;
+        }
+        treeNode.children.forEach(node => {
+          this.instance.cancelSelectedNode(node);
+          this.cancelGroup(node);
+        });
+      }
+  
+      renderCurModule(type) {
+        if (!this.module[type].cls) return;
+        this.curModule && this.curModule.close && this.curModule.close();
+        this.curModule = new this.module[type].cls(this);
+        this.curModule.type = type;
+        this.curModule.show();
+      }
+      renderMap(data) {
+        new Map(this,data).show();
+      }
+
+      attachEvent() {
+        $(window).off('resize').on('resize', function () {
+          $("[_echarts_instance_]").each(function (i, dom) {
+            echarts.getInstanceById(dom.getAttribute("_echarts_instance_")).resize();
+          });
+        })
+  
+        $(this.navCtn).off('click.BMOverviewItem').on('click.BMOverviewItem', '.BMOverviewItem', e => {
+          $(this.navCtn).find(".active").removeClass("active");
+          $(e.currentTarget).addClass('active');
+          this.renderCurModule(e.currentTarget.dataset.type);
+        });
+        $(".BMfilterPlaneCtn", this.navCtn).off('click').on('click', '.bm-checkbox', e => {
+          $(e.currentTarget).toggleClass("bm-checkbox-checked");
+        })
+  
+        $(this.navCtn).off('click.filter').on('click.filter', '.BMOverviewItem .filter', e => {    
+          e.stopPropagation();
+          if ($(e.currentTarget).parent().hasClass("active")) {
+            $(this.navCtn).find(".BMfilterPlane").toggleClass("selected");
+          }
+        });
+        $(".BMfilterPlane", this.navCtn).off('click').on('click', '.btnFilter', e => {
+          let bmChecked = Array.from(document.querySelectorAll('.bm-checkbox-checked'));
+          let optionData = {};
+          bmChecked.forEach(v => {
+            if (!optionData[v.dataset.type]) {
+              optionData[v.dataset.type] = [v.dataset.name];
+            } else {
+              optionData[v.dataset.type].push(v.dataset.name);
+            }
+          });
+          let options = this.getFilterData(optionData);
+          this.curModule.show(options);
+          $(this.navCtn).find(".BMfilterPlane").removeClass("selected");
+          e.stopPropagation();
+        })
+      }
+      getTotalConsumption(data, type) {
+        //type="real" 获取17/6-18/5起能耗和
+        //type="history" 获取16/6-17/5起能耗和
+        //type="forecast" 获取18/6-19/5起能耗和
+        type = type || 'real';
+        data = data || bmData;
+        let total = 0,
+          filtered;
+        data.forEach(v => {
+          filtered = v[type];
+          if (filtered && filtered.length > 0) {
+            total += filtered.reduce((p, n) => p + n);
+          } else {
+            total += filtered;
+          }
+        })
+        return total
+        // return total.toFixed(1);
+      }
+  
+      getFilterData(option) {
+        this.optionType = option;
+        let keyArr = Object.keys(this.optionType),key,keyValue;
+        let filterData = bmData.filter(item => {
+          for (var i=0;i< keyArr.length;i++) {
+            key = keyArr[i],keyValue = this.optionType[key];
+            let ageFlag = [];
+            if (key !== "age") {
+              if (keyValue.indexOf(item[key]) < 0) return false;
+            } else {
+              for(let i=0;i<keyValue.length;i++){
+                let ageRange = keyValue[i].split("~");
+                if (!(item[key] >= ageRange[0] && item[key] <= ageRange[1])){
+                  ageFlag.push(false); 
+                }else{
+                  ageFlag.push(true); 
+                } ;
+              }
+              if(ageFlag.indexOf(true)<0){
+                return false
+              }
+            }
+          }
+          return true
+        })
+        return filterData;
+      }
+      getCarbonEmission(data) {
+        return (data * 0.1229 / 1000 * 2.493).toFixed(0);
+      }
+      getKeyFilter(data, key, type) {
+        let optionData = {};
+        data.forEach(v => {
+          if (!optionData[v[key]]) {
+            if(v[type] instanceof Array){
+              optionData[v[key]] = [].concat(v[type]);
+            }else{
+              optionData[v[key]] = v[type];
+            }
+          } else {
+            optionData[v[key]].forEach((item, i) => {
+              optionData[v[key]][i] += (v[type][i] ? v[type][i] : 0);
+            })
+          }
+        });
+        return optionData;
+      }
+      renderSummary(parentNode, data) {
+        let layout =
+          `<div class="divBMBox" data-field="consumption">
+              <div class="divItem" data-item="cumulant">
+                  <p class="BMSubtitle">
+                    Annual Consumption (YTD 2018)
+                  </p>
+                  <div class="BMConsuptionvalue amount">
+                    <div><span class="value">--</span><span>MWh</span></div>
+                    <span class="contrast mark"><span class="iconfont icon-shuangjiantou1"></span><span class="value">--</span></span>
+                  </div>
+              </div>
+              <div class="divItem" data-item="forecast">
+                <p class="BMSubtitle">Annual Consumption (YTD 2017) </p>
+                <p class="BMValue amount"><span class="value">--</span><span>MWh</span> </p>
+              </div>
+              <div class="divItem" data-item="target">
+                <p class="BMSubtitle">Target (2018)</p>
+                <p class="BMValue amount"><span class="value">--</span><span>MWh</span> </p>
+              </div>
+            </div>
+            <div class="divBMBox" data-field="carbon">
+              <div class="divItem" data-item="cumulant">
+                  <p class="BMSubtitle">
+                    Carbon Emission (YTD 2018)
+                  </p>
+                  <div class="BMConsuptionvalue amount">
+                    <div><span class="value">--</span><span>ton</span></div>
+                    <span class="contrast mark"><span class="iconfont icon-shuangjiantou1"></span><span class="value">--</span></span>
+                  </div>
+              </div>
+              <div class="divItem" data-item="forecast">
+                <p class="BMSubtitle">Carbon Emission (YTD 2017) </p>
+                <p class="BMValue amount"><span class="value">--</span><span>ton</span> </p>
+              </div>
+              <div class="divItem" data-item="target">
+                <p class="BMSubtitle">Target (2018)</p>
+                <p class="BMValue amount"><span class="value">--</span><span>ton</span> </p>
+              </div>
+            </div>`;
+        $(parentNode).append($(layout));
+        let container = $(parentNode)[0];
+        $.when(
+                this.getHistoryData({ startTime: "2018-01-01", endTime: "2018-05-01" },data).done(result => {
+                    let total_energy =
+                        this.util.math.sum(
+                            result.map(item => {
+                                return item.data;
+                            })
+                        ) / 1000;
+                    let total_carbon = ((total_energy * 0.1229)) * 2.493;
+                    container.querySelector(
+                        '[data-field="consumption"] [data-item="cumulant"] .amount .value'
+                    ).innerHTML = this.util.number.toFixed(total_energy);
+                    // this.container.querySelector(
+                    //     '[data-module="summary"] [data-field="consumption"] [data-item="target"] .amount .value'
+                    // ).innerHTML = this.util.number.toFixed(total_energy * 0.95);
+
+                    container.querySelector(
+                        '[data-field="carbon"] [data-item="cumulant"]  .amount .value'
+                    ).innerHTML = this.util.number.toFixed(total_carbon);
+                    // this.container.querySelector(
+                    //     '[data-module="summary"] [data-field="carbon"] [data-item="target"] .amount .value'
+                    // ).innerHTML = this.util.number.toFixed(total_carbon * 0.95);
+                    return total_energy;
+                }),
+                this.getHistoryData({ startTime: "2017-01-01", endTime: "2017-05-01" },data)
+            ).done((thisYear, lastYear) => {
+                let total_lastYear = this.util.math.sum(
+                    lastYear.map(item => {
+                        return item.data;
+                    })
+                );
+                let total_thisYear = this.util.math.sum(
+                    thisYear.map(item => {
+                        return item.data;
+                    })
+                );
+                if (total_lastYear < total_thisYear) {
+                    container.querySelector('[data-field="consumption"] .contrast').classList.add("increase");
+                    container.querySelector('[data-field="carbon"] .contrast').classList.add("increase");
+                } else if (total_lastYear > total_thisYear) {
+                    container.querySelector('[data-field="consumption"] .contrast').classList.add("decrease");
+                    container.querySelector('[data-field="carbon"] .contrast').classList.add("decrease");
+                } else {
+                    container.querySelector('[data-field="consumption"] .contrast').classList.add("equal");
+                    container.querySelector('[data-field="carbon"] .contrast').classList.add("equal");
+                }
+                container.querySelector('[data-field="consumption"] .contrast .value').innerHTML =
+                    Math.abs(this.util.number.toFixed((100 * (total_thisYear - total_lastYear)) / total_lastYear)) + "%";
+                container.querySelector('[data-field="carbon"] .contrast .value').innerHTML =
+                    Math.abs(this.util.number.toFixed((100 * (total_thisYear - total_lastYear)) / total_lastYear)) + "%";
+            });
+            this.getHistoryData({ startTime: "2017-01-01", endTime: "2017-12-01" },data).done(result => {
+                let total_energy =
+                    this.util.math.sum(
+                        result.map(item => {
+                            return item.data;
+                        })
+                    ) / 1000;
+                let total_carbon = ((total_energy * 0.1229)) * 2.493;
+                container.querySelector(
+                    '[data-field="consumption"] [data-item="forecast"] .amount .value'
+                ).innerHTML = this.util.number.toFixed(total_energy);
+
+                container.querySelector(
+                    '[data-field="carbon"] [data-item="forecast"]  .amount .value'
+                ).innerHTML = this.util.number.toFixed(total_carbon);
+
+                container.querySelector(
+                        '[data-field="consumption"] [data-item="target"] .amount .value'
+                    ).innerHTML = this.util.number.toFixed(total_energy * 0.95);
+
+                container.querySelector(
+                        '[data-field="carbon"] [data-item="target"] .amount .value'
+                    ).innerHTML = this.util.number.toFixed(total_carbon * 0.95);
+            });
+      }
+      getThousandsBit(num) {
+        let str = (num + '').split(".")[0];
+        return str.split("").reverse().reduce((prev, next, index) => {
+          return ((index % 3) ? next : (next + ',')) + prev;
+        })
+      }
+      getHistoryData(option,data) {
+          let $promise = $.Deferred();
+          let store = [];
+          data = data || this.store;
+          let { startTime, endTime } = option;
+          let start = parseInt(12 * (moment(startTime).year() - moment("2015-05").year()) + moment(startTime).month() - moment("2015-05").month());
+          let end = parseInt(12 * (moment(endTime).year() - moment("2015-05").year()) + moment(endTime).month() - moment("2015-05").month());
+          store = data.map(item => {
+              return {
+                  data: item.energy.slice(start, end + 1)
+              };
+          });
+          $promise.resolveWith(null, [store]);
+          return $promise.promise();
+      }
+      getPredictData(option,data) {
+          let $promise = $.Deferred();
+          let store = [];
+          data = data || this.store;
+          let { startTime, endTime } = option;
+          let start = parseInt(12 * (moment(startTime).year() - moment("2018-06").year()) + moment(startTime).month() - moment("2018-06").month());
+          let end = parseInt(12 * (moment(endTime).year() - moment("2018-06").year()) + moment(endTime).month() - moment("2018-06").month());
+          store = data.map(item => {
+              return {
+                  data: item.predict.slice(start, end + 1)
+              };
+          });
+          $promise.resolveWith(null, [store]);
+          return $promise.promise();
+      }
+      close() {
+        preRequest.abort();
+      }
+    }
+    class Energy {
+      constructor(data) {
+        this.screen = data;
+      }
+      get util(){
+        return UTIL
+      }
+      show(option) {
+        if (option && option instanceof Array) {
+          this.store = option;
+        } else {
+          this.store = bmData;
+          this.screen.initFilterPlane();
+        }
+        this.init();
+      }
+      init() {
+        let layoutDom =
+        `<div class="BMpage2">
+          <div class="BMLayout">
+            <div style="height:66%;width:100%">
+  
+              <div class="pane dbEnergy">
+                <div class="divCardStyle">
+                  <div class="divBMTitle">Energy Summary</div>
+                  <div class="divBMContent" data-module="BMsummary"></div>
+                </div>
+              </div>
+  
+              <div class="pane dbDetail">
+                <div class="divCardStyle">
+                    <div class="divBMTitle" style="display: flex;justify-content: space-between;">
+                    <div>Energy profile (MWh)</div>
+                    <div class="divProfileBtn">
+                            <div option-type="type">Type</div>
+                            <div class="active" option-type="area">District</div>
+                      </div>
+                    </div>
+                  <div class="divBMChart">
+                    <div style="width:100%;height:30px;display:flex">
+                        <div class="profileLegend"></div>
+                    </div>
+                    <div class="divBMChart" data-module="profile" style="height:calc(100% - 30px);"></div>
+                  </div>
+                </div>
+              </div>
+  
+            </div>
+            
+            <div class="pane" style="height:34%;">
+              <div class="divCardStyle">
+                <div class="divBMTitle" style="display: flex;justify-content: space-between;">
+                  <div>Energy Ranking (MWh)</div>
+                  <div class="divOptionBtn">
+                    <div option-type="Forecast">Forecast</div>
+                    <div class="active" option="Realtime">Realtime</div>
+                  </div>
+                </div>
+                <div class="divBMChart" data-module="projectRanking" style="padding-top:10px;">
+                </div>
+              </div>
+            </div>
+  
+          </div>
+  
+          <div class="BMLayout">
+  
+            <div class="pane" style="height:66%;">
+              <div class="divCardStyle" id="BMmap" data-module="BMmap"></div>
+            </div>
+            
+            <div class="pane" style="height:34%;">
+              <div class="divCardStyle" >
+                <div class="divBMTitle">Top-5 Annual Energy Users (MWh)</div>
+                <div class="divBMChart" data-module="ranking"></div>
+              </div>
+            </div>
+  
+          </div>
+        </div>`;
+        this.screen.container.empty().append(layoutDom);
+        this.initRanking();
+        this.screen.renderSummary(`[ data-module="BMsummary"]`, this.store);
+        this.screen.renderMap(this.store);
+        this.initRankingChart();
+        this.initTopFiveChart();
+        this.initProfileChart();
+        this.attachEvent();
+      }
+      initRanking() {
+        this.rankData = this.store.map(item => {
+          item.energyTotal = this.screen.getTotalConsumption([item], "real");
+          item.forecastTotal = this.screen.getTotalConsumption([item], "predict");
+          return item;
+        })
+      };
+      attachEvent() {
+        $(".divOptionBtn div", this.screen.container).off('click').on('click', e => {
+          $(e.currentTarget).siblings().removeClass('active');
+          $(e.currentTarget).addClass("active");
+          let type = $(e.currentTarget).attr("option-type");
+          this.initRankingChart(type);
+        });
+        $(".divProfileBtn div", this.screen.container).off('click').on('click', e => {
+          $(e.currentTarget).siblings().removeClass("active");
+          $(e.currentTarget).addClass("active");
+          let type = $(e.currentTarget).attr("option-type");
+          this.initProfileChart(type);
+        });
+      }
+      initProfileChart(type) {
+        type = type || "area";
+        let optionData = this.screen.getKeyFilter(this.store, type, "energy")
+        // this.store.forEach(v => {
+        //   if (!optionData[v[type]]) {
+        //     optionData[v[type]] = v.energy;
+        //   } else {
+        //     optionData[v[type]].forEach((item, i) => {
+        //       item += v.energy[i] ? v.energy[i] : 0;
+        //     })
+        //   }
+        // });
+        let colorList = ['#0033a0', '#01a3e1', '#efdf02', '#F56B38', "#00B176", "#EC0868", "#3752E6"];
+        this.screen.container.find(".profileLegend").empty();
+        let seriesData = Object.keys(optionData).map((item, i) => {
+          this.screen.container.find(".profileLegend").append(
+            `<div><span class="profileLegendIcon" style="background:${colorList[i]}"></span><span>${item}</span></div>`
+          )
+          return {
+            name: 'Energy',
+            type: 'bar',
+            barWidth: '8px',
+            stack: "total",
+            itemStyle: { //图形样式
+              normal: {
+                color: colorList[i]
+              },
+            },
+            data: optionData[item].map(v=>parseInt(v/1000))
+          }
+        })
+        let option = {
+          tooltip: {
+            trigger: 'axis',
+            axisPointer: {
+              type: 'shadow'
+            }
+          },
+          grid: {
+            left: '5%',
+            right: '5%',
+            bottom: '5%',
+            top: 10,
+            containLabel: true
+          },
+          xAxis: [{
+            show: true,
+            type: 'category',
+            data: Array(37).fill(0).map((key, i) => {
+              return new Date(this.screen.nowTime.getFullYear(), this.screen.nowTime.getMonth() - i, 1).format(
+                'yyyy/MM')
+            }).reverse(),
+            axisLabel: {
+              show: true,
+              textStyle: {
+                color: "#8a9aac",
+                fontSize: 12,
+              },
+            },
+            axisLine: {
+              lineStyle: {
+                type: 'solid',
+                color: '#e7eaef', //左边线的颜色
+              }
+            },
+            splitLine: { //分割线
+              show: false,
+            },
+            axisTick: {
+              show: false,
+            }
+  
+          }],
+          yAxis: [{
+            type: 'value',
+            axisLabel: {
+              show: true,
+              textStyle: {
+                color: "#8a9aac",
+                fontSize: 12,
+              },
+            },
+            axisLine: {
+              lineStyle: {
+                color: '#e7eaef',
+              }
+            },
+            splitLine: { //分割线
+              show: true,
+              lineStyle: {
+                color: '#e7eaef',
+              }
+            },
+            axisTick: {
+              show: false,
+            }
+          }],
+          series: seriesData
+        };
+        echarts.init($(`[data-module="profile"]`)[0]).setOption(option,true);
+      }
+      initRankingChart(type) {
+        let key = type && type == "Forecast" ? "forecastTotal" : "energyTotal";
+        let rankData = this.rankData.sort((a, b) => {
+          return Number(b[key]) - Number(a[key])
+        });
+        let option = {
+          color: ['#00a3e0'],
+          tooltip: {
+            trigger: 'axis',
+            axisPointer: {
+              type: 'shadow'
+            }
+          },
+          grid: {
+            left: '5%',
+            right: '5%',
+            bottom: '5%',
+            top: 10,
+            containLabel: true
+          },
+          xAxis: [{
+            type: 'category',
+            data: rankData.map(v => v['name_' + I18n.type]),
+            axisLabel: {
+              show: true,
+              textStyle: {
+                color: "#576771",
+                fontSize: 12,
+              },
+            },
+            axisLine: {
+              lineStyle: {
+                type: 'solid',
+                color: '#e7eaef', //左边线的颜色
+              }
+            },
+            splitLine: { //分割线
+              show: false,
+            },
+            axisTick: {
+              show: false,
+            }
+  
+          }],
+          yAxis: [{
+            type: 'value',
+            axisLabel: {
+              show: true,
+              textStyle: {
+                color: "#576771",
+                fontSize: 12,
+              },
+            },
+            axisLine: {
+              lineStyle: {
+                color: '#e7eaef',
+              }
+            },
+            splitLine: { //分割线
+              show: true,
+              lineStyle: {
+                color: '#e7eaef',
+              }
+            },
+            axisTick: {
+              show: false,
+            }
+          }],
+          series: [{
+            name: 'Energy',
+            type: 'bar',
+            barWidth: '80%',
+            data: rankData.map(v => parseInt(v[key]/1000))
+          }]
+        };
+        echarts.init($(`[data-module="projectRanking"]`)[0]).setOption(option);
+      }
+      initTopFiveChart() {
+        let rankData = this.rankData.sort((a, b) => {
+          return Number(b.energyTotal) - Number(a.energyTotal)
+        }).slice(0, 5).reverse();
+        let option = {
+          legend: {
+            show: false,
+            itemWidth: 12,
+            itemHeight: 12,
+            data: [],
+            textStyle: {
+              fontSize: 14
+            }
+          },
+          tooltip: {
+            show: true,
+            trigger: 'axis',
+          },
+          toolbox: {
+            show: true,
+            feature: {
+              mark: {
+                show: true
+              },
+  
+            }
+          },
+          grid: {
+            left: '35px',
+            right: '35px',
+            bottom: '5%',
+            top: '5%',
+            containLabel: true
+          },
+          xAxis: [{
+            type: 'value',
+            axisLabel: {
+              show: true,
+              textStyle: {
+                color: "#576771",
+                fontSize: 12,
+              },
+            },
+            axisLine: {
+              lineStyle: {
+                type: 'solid',
+                color: '#e7eaef', //左边线的颜色
+              }
+            },
+            splitLine: { //分割线
+              show: false,
+            },
+            axisTick: {
+              show: false,
+            }
+          }],
+          yAxis: [{
+              type: 'category',
+              name: '',
+              splitLine: {
+                show: false,
+  
+              },
+              axisLine: {
+                lineStyle: {
+                  type: 'solid',
+                  color: '#e7eaef', //左边线的颜色
+                }
+              },
+              axisLabel: {
+                interval: 0,
+                show: true,
+                splitNumber: 15,
+                textStyle: {
+                  color: "#576771",
+                  fontSize: 12,
+                },
+              },
+              axisTick: {
+                show: false,
+              },
+              data: rankData.map(v => v['name_' + I18n.type]),
+            },
+  
+          ],
+          series: [{
+            name: '',
+            type: 'bar',
+            barWidth: 12,
+            data: rankData.map(v => parseInt(v.energyTotal/1000)),
+            itemStyle: {
+              normal: {
+                color: function (params) {
+                  let colorList = [
+                    '#00b176',
+                    '#ec0868',
+                    '#01a3e1',
+                    '#efdf02',
+                    '#0033a0',
+                  ];
+                  return colorList[params.dataIndex]
+                },
+              }
+            }
+          }, ]
+        };
+        echarts.init($(`[data-module="ranking"]`)[0]).setOption(option);
+      }
+      close() {
+  
+      }
+    }
+    class EUI {
+      constructor(data) {
+        this.screen = data;
+      }
+      get TYPE_COLOR(){
+        return { 
+            "Residential":"#0033a0",
+            "Commercial":"#01a3e1",
+            "Mall":"#efdf02",
+            "Industrial":"#F56B38",
+            "Rental":"#00B176",
+            "Other": "#EC0868",
+            "Residential(gov)":"#3752E6"
+          }
+      }
+      show(option) {
+        if (option && option.length > 0) {
+          this.store = option;
+        } else {
+          this.store = [...bmData];
+          this.screen.initFilterPlane();
+        }
+        this.init();
+      }
+      init() {
+        let layoutDom =
+          `<div class="BMpage3">
+          <div class="BMLayout">
+            <div style="height:60%;">
+  
+              <div class="pane dbEnergy">
+                <div class="divCardStyle">
+                  <div class="divBMTitle">Energy Summary </div>
+                  <div class="divBMContent" data-module="BMsummary"></div>
+                </div>
+              </div>
+  
+              <div class="dbDetail" style="display:flex;">
+  
+                <div class="pane" style="width:50%;">
+                  <div class="divCardStyle">
+                    <div class="divBMTitle">EUI Per Type (kWh/m²·a)</div>
+                    <div class="divBMChart" data-module="EUIType"></div>
+                  </div>
+                </div>
+  
+                <div class="pane" style="width:50%;">
+                  <div class="divCardStyle">
+                    <div class="divBMTitle">EUI Per District (kWh/m²·a)</div>
+                    <div class="divBMChart" data-module="EUIDistrict"></div>
+                  </div>
+                </div>
+  
+              </div>
+  
+  
+            </div>
+  
+            <div class="pane">
+              <div class="divCardStyle" style="height:40%;">
+                <div class="divBMTitle">EUI Ranking (kWh/m²·a)</div>
+                <div class="divBMChart" data-module="euiRanking"></div>
+              </div>
+            </div>
+  
+          </div>
+          <div class="BMLayout">
+            <div class="pane" style="height:60%">
+              <div class="divCardStyle" id="BMmap" data-module="BMmap"></div>
+            </div>
+  
+            <div class="pane" style="height:40%;">
+              <div class="divCardStyle">
+                <div class="divBMTitle">Top-5 Annual Energy Users (kWh/m²·a)</div>
+                <div class="divBMChart" data-module="ranking"></div>
+              </div>
+            </div>
+  
+          </div>
+        </div>`;
+        this.screen.container.empty().append(layoutDom);
+        this.screen.renderSummary(`[data-module="BMsummary"]`, this.store);
+        this.screen.renderMap(this.store);
+        this.initEUIRanking();
+        this.initEUITypeDistrict();
+        this.initTopFiveChart();
+      }
+      initEUITypeDistrict() {
+        let typeData = this.screen.getKeyFilter(this.store, "type", "real");
+        let typeHistoryData = this.screen.getKeyFilter(this.store, "type", "history");
+        let districtData = this.screen.getKeyFilter(this.store, "area", "real");
+        let districtHistoryData = this.screen.getKeyFilter(this.store, "area", "history");
+        let totalgfa = this.screen.getTotalConsumption(this.store, "gfa");
+        let contrast = (this.screen.getTotalConsumption(this.store, "real") - this.screen.getTotalConsumption(this.store, "history"))/this.screen.getTotalConsumption(this.store, "history");
+        let typeDom =
+          `<div class="EUIAllBox">
+                <div class="EUIAllValue"><span>All</span><span class="value">${(this.screen.getTotalConsumption(this.store, "real")/totalgfa).toFixed(1)}</span></div>
+                <div class="contrast ${contrast >0?'up':'down'}">
+                  <span class="icon iconfont icon-shuangjiantou1"></span>
+                  <span class="value">${(Math.abs(contrast)*100).toFixed(1)}%</span>
+                </div>
+            </div>`;;
+        $(`[data-module="EUIType"]`).append(typeDom + this.getTypeDom(typeData, typeHistoryData, "type"));
+        $(`[data-module="EUIDistrict"]`).append(typeDom + this.getTypeDom(districtData, districtHistoryData, "area"));
+      }
+      getTypeDom(data, history, type) {
+        let layout = `<div class="EUITypeBox">`,
+          sum = 0,
+          euiSum = 0,
+          value = 0,
+          historySum = 0,keyArr;
+          if(type == "area"){          
+            keyArr = Object.keys(data).sort((a,b)=>{return a.charAt(a.length-2) - b.charAt(b.length-2)})
+          }else{
+            keyArr = Object.keys(data);
+          }
+          keyArr.forEach((v, i) => {
+          sum = data[v].reduce((p, n) => p + n);
+          historySum = history[v].reduce((p, n) => p + n);
+          euiSum = this.screen.getTotalConsumption(this.store.filter(m => m[type] == v), "gfa");
+          value = (sum / euiSum).toFixed(1);
+          layout += `<div class="EUITypeValue">
+            <span class="marker" style="${type != 'type'?'display:none':''}">
+              <span class="icon iconfont icon-shui4" style="color:${this.TYPE_COLOR[v]}"></span>
+              <span class="letter">${v[0].toUpperCase()}</span>
+            </span>
+            <span class="name">${v}</span>
+            <span class="value ${sum > historySum?"up":(sum < historySum?"down":"") }">${value}</span></div>`
+        })
+        layout += `<div>`;
+        return layout
+      }
+      initEUIRanking() {
+        let key = "eui";
+        let rankData = this.store.sort((a, b) => {
+          return Number(b[key]) - Number(a[key])
+        });
+        let option = {
+          color: ['#00a3e0'],
+          tooltip: {
+            trigger: 'axis',
+            axisPointer: {
+              type: 'shadow'
+            }
+          },
+          grid: {
+            left: '3%',
+            right: '3%',
+            bottom: '8%',
+            top: '8%',
+            containLabel: true
+          },
+          xAxis: [{
+            type: 'category',
+            data: rankData.map(v => v['name_' + I18n.type]),
+            axisLabel: {
+              show: true,
+              textStyle: {
+                color: "#576771",
+                fontSize: 12,
+              },
+            },
+            axisLine: {
+              lineStyle: {
+                type: 'solid',
+                color: '#e7eaef', //左边线的颜色
+              }
+            },
+            splitLine: { //分割线
+              show: false,
+            },
+            axisTick: {
+              show: false,
+            }
+  
+          }],
+          yAxis: [{
+            type: 'value',
+            axisLabel: {
+              show: true,
+              textStyle: {
+                color: "#576771",
+                fontSize: 12,
+              },
+            },
+            axisLine: {
+              show: false,
+              lineStyle: {
+                color: '#e7eaef',
+              }
+            },
+            splitLine: { //分割线
+              show: true,
+              lineStyle: {
+                color: '#e7eaef',
+              }
+            },
+            axisTick: {
+              show: false,
+            }
+          }],
+          series: [{
+            name: 'Energy',
+            type: 'bar',
+            barWidth: '80%',
+            data: rankData.map(v => v[key])
+          }]
+        };
+        echarts.init($(`[data-module="euiRanking"]`)[0]).setOption(option);
+      }
+      initTopFiveChart() {
+        let rankData = this.store.sort((a, b) => {
+          return Number(b.eui) - Number(a.eui)
+        }).slice(0, 5);
+        let colorlist = ['#00b176', '#ec0868', '#01a3e1', '#efdf02', '#0033a0'];
+        let seriesData = rankData.map((v, i) => {
+          return {
+            name: v['name_' + I18n.type],
+            type: 'line',
+            data: v.eui_history,
+            itemStyle: {
+              normal: {
+                color: colorlist[i],
+              }
+            },
+            markPoint:{
+              data:[    
+                  {
+                    name: '',
+                    value:v['name_' + I18n.type],
+                    coord:[v.eui_history.length - 1,v.eui_history[v.eui_history.length - 1]],
+                    symbol:'rect',
+                    symbolSize:10,
+                    label:{
+                        position: ['100%', '0%'],
+                    }
+                  }
+                ]
+            }
+          }
+        })
+        let option = {
+          color: colorlist,
+          legend: {
+            show:false,
+            orient: 'vertical',
+            y: 'center',
+            right: '2%',
+            itemWidth: 12,
+            itemHeight: 12,
+            data: rankData.map(v => v['name_' + I18n.type]),
+            textStyle: {
+              fontSize: 14
+            }
+          },
+          tooltip: {
+            show: true,
+            trigger: 'axis',
+          },
+          toolbox: {
+            show: false,
+            feature: {
+              mark: {
+                show: true
+              },
+            }
+          },
+          grid: {
+            "left": 10,
+            "right": 150,
+            bottom: 10,
+            top: '5%',
+            containLabel: true
+          },
+          xAxis: [{
+            type: 'category',
+            data: Array(12).fill(0).map((key, i) => {
+                return new Date(this.screen.nowTime.getFullYear(), this.screen.nowTime.getMonth() - i, 1).format(
+                  'yyyy/MM')
+              }).reverse(),
+            axisLabel: {
+              show: true,
+              textStyle: {
+                color: "#576771",
+                fontSize: 12,
+              },
+            },
+            axisLine: {
+              lineStyle: {
+                type: 'solid',
+                color: '#e7eaef', //左边线的颜色
+              }
+            },
+            splitLine: { //分割线
+              show: false,
+            },
+            axisTick: {
+              show: false,
+            }
+          }],
+          yAxis: [{
+              type: 'value',
+              name: '',
+              min:"dataMin",
+              splitLine: {
+                show: false,
+              },
+              axisLine: {
+                lineStyle: {
+                  type: 'solid',
+                  color: '#e7eaef', //左边线的颜色
+                }
+              },
+              axisLabel: {
+                interval: 0,
+                show: true,
+                splitNumber: 15,
+                textStyle: {
+                  color: "#576771",
+                  fontSize: 12,
+                },
+              },
+              axisTick: {
+                show: false,
+              },
+            },
+  
+          ],
+          series: seriesData
+        };
+        echarts.init($(`[data-module="ranking"]`)[0]).setOption(option);
+      }
+      close() {
+  
+      }
+    }
+    class District {
+      constructor(data) {
+        this.screen = data;
+      }
+      show() {
+        if (this.screen.selectedNodes && this.screen.selectedNodes.length > 0) {
+          this.store = this.screen.selectedNodes;
+        } else {
+          this.store = this.screen.store;
+        }
+        this.init();
+      }
+      init() {
+        let layoutDom =
+          `<div class="BMpage4">
+          <div class="BMLayout dbEnergy">
+            <div class="pane" style="width:50%;">
+              <div class="divCardStyle">
+                <div class="divBMTitle">Energy</div>
+                <div class="divBMContent" data-module="BMsummary"></div>
+              </div>
+            </div>
+  
+            <div class="pane" style="width:50%;">
+              <div class="divCardStyle" id="BMmap" data-module="BMmap"></div>
+            </div>
+  
+          </div>
+  
+          <div class="BMLayout dbDetail">
+  
+            <div class="pane" style="width: 60%">
+              <div class="divCardStyle">
+                <div class="divBMTitle">Trend (MWh)</div>
+                <div class="trendLegend">
+                  <div class="legendItem"><span class="legendIcon" style="background: #00a3e0;"></span><span>History</span></div>
+                  <div class="legendItem"><span class="legendIcon" style="background: #f56b38;"></span><span>Prediction</span></div>
+                </div>
+                <div class="divBMChart" data-module="trend" style="height:calc(100% - 70px)"></div>
+              </div>
+            </div>
+  
+            <div style="width:40%; height: 100%;">
+              <div class="pane" style="height:50%">
+                <div class="divCardStyle">
+                  <div class="divBMTitle">Ranking (kWh/m²·a)</div>
+                  <div class="divBMChart" data-module="ranking"></div>
+                </div>
+              </div>
+  
+              <div class="pane" style="height:50%">
+                <div class="divCardStyle">
+                  <div class="divBMTitle">Budget</div>
+                  <div class="divBMContent" data-module="budget"></div>
+                </div>
+              </div>
+            </div>
+    
+          </div>
+        </div>`;
+        this.screen.container.empty().append(layoutDom);
+        this.screen.renderSummary(`[data-module="BMsummary"]`, this.store);
+        this.screen.renderMap(this.store);
+        this.initTrendChart();
+        this.initRanTypeRanking();
+        this.initBudget();
+      }
+      initRanTypeRanking() {
+        let selectedNode = this.store;
+        let projectList = this.screen.selectedDistrict[0].children
+        // let projectList = this.screen.selectedDistrict[0].children.filter(v => v.type === selectedNode[0].type).map(v => {
+        //   v.total = this.screen.getTotalConsumption([v], "real");
+        //   return v;
+        // });
+        projectList = projectList.sort((a, b) =>( a.eui - b.eui));
+        let seriesData = projectList.map(v => {
+          let sColor = v.tId === selectedNode[0].tId ? "#efdf00" : "#0033a0";
+          return {
+            name: v["name_"+ I18n.type],
+            type: 'bar',
+            itemStyle:{
+              color: sColor
+            },
+            value: v.eui,
+          }
+        })
+        // let len = Number(seriesData[seriesData.length-1].charAt(0))+1;
+        // let categoryArr = Array(len).fill(0).map((v, i) => {
+        //       return this.screen.getThousandsBit (Number(i + Array(len - 2).fill(0).join('')));
+        //   });
+        let option = {
+          legend: {
+            show: false,
+            itemWidth: 12,
+            itemHeight: 12,
+            data: [],
+            textStyle: {
+              fontSize: 14
+            }
+          },
+          tooltip: {
+            show: true,
+            trigger: 'item'
+          },
+          toolbox: {
+            show: true,
+            feature: {
+              mark: {
+                show: true
+              },
+  
+            }
+          },
+          grid: {
+            left: '5%',
+            right: '8%',
+            bottom: 10,
+            top: '5%',
+            containLabel: true
+          },
+          xAxis: [{
+            type: 'value',
+            axisLabel: {
+              show: true,
+              textStyle: {
+                color: "#576771",
+                fontSize: 12,
+              },
+            },
+            axisLine: {
+              lineStyle: {
+                type: 'solid',
+                color: '#e7eaef', //左边线的颜色
+              }
+            },
+            splitLine: { //分割线
+              show: false,
+            },
+            axisTick: {
+              show: false,
+            }
+          }],
+          yAxis: [{
+            type: 'category',
+            name: '',
+            splitLine: {
+              show: false,
+  
+            },
+            axisLine: {
+              lineStyle: {
+                type: 'solid',
+                color: '#e7eaef', //左边线的颜色
+              }
+            },
+            axisLabel: {
+              show: true,
+              splitNumber: 15,
+              textStyle: {
+                color: "#576771",
+                fontSize: 12,
+              },
+            },
+            axisTick: {
+              show: false,
+            },
+            data: projectList.map(v => v['name_' + I18n.type]),
+          }, ],
+          series: [{
+            name: 'Ranking',
+            type: 'bar',
+            barWidth: '80%',
+            data: seriesData,
+          }]
+        };
+        echarts.init($(`[data-module="ranking"]`)[0]).setOption(option);
+      }
+      initBudget() {
+        let total_2018 = this.screen.getTotalConsumption(this.store, "real");
+        let total_2019 = this.screen.getTotalConsumption(this.store, "predict");
+        let layout =
+          `<div class="divBMBox">
+              <p class="BMHeadline">2018</p>
+              <p class="BMSubtitle">Consumption </p>
+  
+              <div class="BMConsuptionvalue"><div><span>${this.screen.getThousandsBit((total_2018/1000).toFixed(0))}</span><span>MWh</span></div></div>
+              <p class="BMSubtitle">bill (estimated)  </p>
+  
+              <div class="BMConsuptionvalue"><div><span>${this.screen.getThousandsBit(total_2018*1.234)}</span><span>HKD </span></div> </div>
+            </div>
+            <div class="divBMBox">
+              <p class="BMHeadline">2019</p>
+              <p class="BMSubtitle">Consumption</p>
+  
+              <div class="BMConsuptionvalue"><div><span>${this.screen.getThousandsBit((total_2019/1000).toFixed(0))}</span><span>MWh</span><div></div>
+              <p class="BMSubtitle">bill (estimated)  </p>
+  
+              <div class="BMConsuptionvalue"><div><span>${this.screen.getThousandsBit(total_2019*1.234)}</span><span>HKD</span></div> </div>
+            </div>`;
+        $(`[data-module="budget"]`).append(layout);
+      }
+      initTrendChart() {
+        let rankData = this.store;
+        let option = {
+          color: ['#00a3e0', '#f56b38'],
+          tooltip: {
+            trigger: 'axis',
+            axisPointer: {
+              type: 'shadow'
+            }
+          },
+          grid: {
+            left: '3%',
+            right: '3%',
+            bottom: '3%',
+            top: '8%',
+            containLabel: true
+          },
+          xAxis: [{
+            type: 'category',
+            data: Array(48).fill(0).map((key, i) => {
+              return new Date(this.screen.predictTime.getFullYear(), this.screen.predictTime.getMonth() - i,
+                1).format(
+                'yyyy/MM')
+            }).reverse(),
+            axisLabel: {
+              show: true,
+              textStyle: {
+                color: "#576771",
+                fontSize: 12,
+              },
+            },
+            axisLine: {
+              lineStyle: {
+                type: 'solid',
+                color: '#e7eaef', //左边线的颜色
+              }
+            },
+            splitLine: { //分割线
+              show: false,
+            },
+            axisTick: {
+              show: false,
+            }
+  
+          }],
+          yAxis: [{
+            type: 'value',
+            axisLabel: {
+              show: true,
+              textStyle: {
+                color: "#576771",
+                fontSize: 12,
+              },
+            },
+            axisLine: {
+              show: false,
+              lineStyle: {
+                color: '#e7eaef',
+              }
+            },
+            splitLine: { //分割线
+              show: true,
+              lineStyle: {
+                color: '#e7eaef',
+              }
+            },
+            axisTick: {
+              show: false,
+            }
+          }],
+          series: [{
+            name: 'Energy',
+            type: 'bar',
+            barWidth: '6px',
+            itemStyle: {
+              normal: {
+                color: function (params) {
+                  let colorList = ['#00a3e0', '#f56b38'];
+                  return params.dataIndex < 36 ? colorList[0] : colorList[1]
+                },
+  
+              }
+            },
+            data: rankData[0].energy.slice(0,36).concat(rankData[0].predict).map(item=>{return parseFloat((item/1000).toFixed(2))})
+          }]
+        };
+        echarts.init($(`[data-module="trend"]`)[0]).setOption(option);
+      }
+      close() {
+  
+      }
+    }
+    class Map {
+      constructor(screen, data) {
+        this.screen = screen;
+        this.data = data;
+      }
+      show() {
+        this.init();
+        this.initLegendAndLogo();
+      }
+      init(){
+        try {
+            if (google && google.maps) {
+              return new googleMap(this.screen, this.data);
+            }
+            if (BMap && BMap.Map) {
+              return new baiduMap(this.screen, this.data);
+            }
+          } catch (e) {
+            this.loadScript();
+            return;
+          }
+      }
+      initLegendAndLogo(){    
+        let mapParentCtn = $('#BMmap').parent();
+        let iconLayout = `<div class="mapIconBox">`;
+        let dataType = [...new Set(this.data.map(v=>v.type))];
+        dataType.forEach(item => {
+          iconLayout += `<div class="mapIconItem"><span class="iconfont icon-shui4" style="color:${typeColor[item]}"></span><span>${item}</span></div>`;
+        })
+        mapParentCtn.find(".mapIconBox").remove();
+        mapParentCtn.append(iconLayout+`</div>`);
+        mapParentCtn.append(`<img class="mapLogo" src="https://images.smartbeop.com/custom/project/benchmarkdemo/logo.jpg">`)
+      }
+
+      loadScript(type) {
+          let _this = this;
+          let url = {
+            google: "https://maps.googleapis.com/maps/api/js?language=en&key=AIzaSyAzzOzAmrGov5GLacve9w8_Q8dS-xBYCgc&callback=initMap",
+            baidu: "https://api.map.baidu.com/api?v=3.0&ak=VNzhKjCMIdfr8FrHP4ys2jha&callback=initMap"
+          };
+          let mapUrl = '';
+          let isGoogleMap = false;
+          if (I18n.type == "zh") {
+            mapUrl = url.baidu;
+            isGoogleMap = false;
+          } else {
+            mapUrl = url.google;
+            isGoogleMap = true;
+          }
+          if (type) {
+            mapUrl = url[type]
+          };
+    
+          // let spinnerMap = new LoadingSpinner({
+          //   color: "#00FFFF"
+          // });
+          // spinnerMap.spin(this.container.find(`[ data-module="BMmap"]`)[0]);
+          sessionStorage.setItem("isGoogleMap", isGoogleMap);
+          let mapAjax = $.ajax({
+            url: mapUrl,
+            dataType: "script",
+            timeout: 15000,
+            success: function () {
+              console.log("map success!")
+            },
+            error: function (jqXHR, errorText) {
+              if (type != "baidu") {
+                _this.loadScript("baidu");
+                sessionStorage.setItem("isGoogleMap", false);
+              }
+            },
+            　　
+            complete: function (XMLHttpRequest, status) { //请求完成后最终执行参数
+              //spinnerMap.stop();
+              if (status == 'timeout' && type == "google") { //超时,status还有success,error等值的情况
+                _this.loadScript("baidu");
+                sessionStorage.setItem("isGoogleMap", false);　　
+                mapAjax.abort;
+              }　　
+            }
+          });
+          return mapAjax;
+        }
+    }
+    class baiduMap {
+        constructor(screen, selectData) {
+          this.screen = screen;
+          this.map = undefined;
+          this.selectData = selectData;
+          this.pointArr = [];
+          this.init();
+        }
+        load() {
+    
+        }
+        init() {
+          this.map = new BMap.Map("BMmap", {
+            minZoom: 1,
+            maxZoom: 22,
+            enableDblclickZoom: false,
+            enableMapClick: false,
+          });
+          this.map.centerAndZoom(new BMap.Point(121.45929, 31.22482), 2);
+          //this.map.setMapStyleV2(mapStyle);
+          this.map.enableScrollWheelZoom();
+          this.map.disableDoubleClickZoom();
+          this.addMarker();
+          this.attachEvent();
+    
+        }
+        addMarker() {
+          let _this = this;
+          if (this.selectData.length > 0) {
+            this.selectData.forEach((element, index) => {
+              let latlng = element.location.split(",");
+              let pos = this.transformCoordinate(this.getLatLng(latlng[0], latlng[1]));
+              let defaultOpts = {
+                map: _this.map,
+                type: element.type,
+                position: pos,
+              };
+              let marker = _this.addBaiduOverlay(defaultOpts);
+              this.pointArr.push(pos);
+              _this.map.addOverlay(marker);
+            });
+            this.map.setViewport(this.pointArr);
+          }
+        }
+        // wgs-84-->bd-09 坐标转化
+        transformCoordinate(data) {
+          var x_PI = (3.14159265358979324 * 3000.0) / 180.0;
+          var lng = data.lng,
+            lat = data.lat;
+          var z = Math.sqrt(lng * lng + lat * lat) + 0.00002 * Math.sin(lat * x_PI);
+          var theta = Math.atan2(lat, lng) + 0.000003 * Math.cos(lng * x_PI);
+          var bd_lng = z * Math.cos(theta) + 0.0065;
+          var bd_lat = z * Math.sin(theta) + 0.006;
+          return {
+            lat: bd_lat,
+            lng: bd_lng
+          };
+        }
+        addBaiduOverlay(defaultOpts) {
+          let BaiduOverlay = function (defaultOpts) {
+            this.option = defaultOpts;
+            this.map = defaultOpts.map;
+            this.location = defaultOpts.position;
+
+          };
+          BaiduOverlay.prototype = new BMap.Overlay();
+          BaiduOverlay.prototype.getBeopMap = this;
+          BaiduOverlay.prototype.initialize = function () {
+            var div = (this._div = document.createElement("div"));
+            div.style.zIndex = BMap.Overlay.getZIndex(this.location.lat);
+            div.className = "mapNewMarker iconfont icon-shui4";
+            div.style.backgroundColor = typeColor[this.option.type];
+            div.innerHTML = `<span>${this.option.type.slice(0,1)}</span>`;
+    
+            div.style.backgroundColor = typeColor[this.option.type];
+            this.map.getPanes().labelPane.appendChild(div);
+    
+            return div;
+          };
+          BaiduOverlay.prototype.draw = function () {
+            var pixel = this.map.pointToOverlayPixel(this.location);
+            this._div.style.left = pixel.x - 15 + "px";
+            this._div.style.top = pixel.y - 15 + "px";
+          };
+          return new BaiduOverlay(defaultOpts);
+        }
+        removeMarker(identifier) {
+          if (!identifier) {
+            return false;
+          }
+          var marker = this.markers[identifier];
+          if (!marker) {
+            return false;
+          }
+          this.map.removeOverlay(marker);
+          return true;
+        }
+        getLatLng(lat, lng) {
+          return new BMap.Point(lat, lng);
+        }
+        attachEvent() {
+          var _this = this;
+          $(".btnRefreshProject").off("click").on("click", function () {
+            $(".projectTxt").html("Project");
+            $(".mapProjectContent").hide();
+            //_this.map.centerAndZoom(new BMap.Point(121.45929, 31.22482), 2);
+            _this.map.setViewport(_this.pointArr);
+          })
+        }
+      }
+    
+      class googleMap {
+        constructor(screen, selectData) {
+          this.screen = screen;
+          this.map = undefined;
+          this.markers = [];
+          this.selectData = selectData;
+          this.init();
+        }
+        init() {
+          this.map = new google.maps.Map(document.getElementById("BMmap"), {
+            center: {
+              lat: 34.397,
+              lng: 150.644
+            },
+            zoom: 8,
+            disableDefaultUI: true
+          });
+          this.addMarker();
+          this.attachEvent();
+        }
+        addMarker() {
+          if (this.selectData.length > 0) {
+            this.selectData.forEach(element => {
+              let projectName = I18n.type == "zh" ? element.name_cn : element.name_english;
+              let latlng = element.location.split(",");
+              let marker = this.addGoogleMarker(
+                this.getLatLng(latlng[1], latlng[0]),
+                this.map, {
+                  type: element.type,
+                  name: projectName
+                }
+              );
+              this.markers.push(marker);
+            });
+            this.setFitView();
+          }
+        }
+        getLatLng(lat, lng) {
+          return new google.maps.LatLng(lat, lng);
+        }
+        addGoogleMarker(latlng, map, args) {
+          let GMarker = function (latlng, map, args) {
+            this.latlng = latlng;
+            this.args = args;
+            this.map = map;
+            this.setMap(map);
+
+          };
+          GMarker.prototype = new google.maps.OverlayView();
+          GMarker.prototype.draw = function () {
+            let self = this;
+    
+            let div = this.div;
+    
+            if (!div) {
+    
+              div = this.div = document.createElement('div');
+    
+              div.className = "mapNewMarker iconfont icon-shui4";
+    
+              div.style.position = 'absolute';
+              div.style.backgroundColor = typeColor[this.args.type];
+              div.innerHTML = `<span>${this.args.type.slice(0,1)}</span>`;
+    
+              var panes = this.getPanes();
+              panes.overlayImage.appendChild(div);
+            }
+    
+            var point = this.getProjection().fromLatLngToDivPixel(this.latlng);
+    
+            if (point) {
+              div.style.left = (point.x - 15) + 'px';
+              div.style.top = (point.y - 15) + 'px';
+            }
+          };
+    
+          GMarker.prototype.onRemove = function () {
+            if (this.div) {
+              this.div.parentNode.removeChild(this.div);
+              this.div = null;
+            }
+          };
+    
+          GMarker.prototype.getPosition = function () {
+            return this.latlng;
+          };
+    
+          GMarker.prototype.getExtData = function () {
+            return this.args;
+          };
+          return new GMarker(latlng, map, args)
+        }
+        setFitView() {
+          var bounds = new google.maps.LatLngBounds();
+          if(Object.keys(this.markers).length == 1){
+            this.map.setZoom(18);
+            this.map.setCenter(this.markers[0].getPosition())
+            return
+          }
+          for (var project in this.markers) {
+            bounds.extend(this.markers[project].getPosition());
+          }
+          this.map.fitBounds(bounds);
+        }
+        attachEvent() {
+          var _this = this;
+          $(".btnRefreshProject").off("click").on("click", function () {
+            _this.setFitView();
+          })
+        }
+      }
+      let BMScreen = new main();
+      BMScreen.show();
+      window.initMap = () => {
+        let isGoogleMap = sessionStorage.getItem("isGoogleMap");
+        isGoogleMap = isGoogleMap == "false" ? false : true;
+        if (window.BMap && !isGoogleMap) {
+          return new baiduMap(BMScreen,  bmData);
+        } else {
+          return new googleMap(BMScreen, bmData);
+        }
+      };
+  </script>

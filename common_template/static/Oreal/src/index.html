@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <script src="data/data.js"></script>
+  <script src="libs/jquery-2.1.4.min.js"></script>
+  <script src="libs/bootstrap.min.js"></script>
+  <script src="libs/jquery.ztree.all.js"></script>
+  <script src="libs/moment.js"></script>
+  <script src="libs/echarts-4.1.0.min.js"></script>
+  <script src="libs/common.js"></script>
+  <link rel="stylesheet" href="css/BMcommon.css">  
+  <link rel="stylesheet" href="css/bootstrap.css">
+  <link rel="stylesheet" href="fonts/iconfont.css">
+</head>
+<body>
+  <style>
+    #pageContainer {
+      position: absolute !important;
+      top: 0 !important;
+    }
+  
+    .springContainer .panel {
+      border-radius: 0;
+    }
+  
+    .mechanicPlane {
+      width: 100%;
+      height: 100%;
+      padding: 5px;
+      background: #ebeef7;
+      color: #5b656b;
+    }
+  
+    .mechanicModule {
+      display: flex;
+      height: 50%;
+    }
+  
+    .mechanicCard {
+      width: 100%;
+      height: 100%;
+      background: #fff;
+    }
+  
+    .mechanicHistoryNav {
+      width: 120px;
+      display: flex;
+      flex-direction: column;
+      background: #fafafa;
+  
+    }
+  
+    .mechanicNavStyle {
+      height: 40px;
+      padding: 10px;
+      cursor: pointer;
+      text-align: center;
+    }
+  
+    .mechanicNavStyle.active {
+      background: #ffad0f;
+    }
+  
+    .mechanicHistoryChart {
+      width: calc(100% - 120px);
+      height: 100%;
+    }
+  
+    .mechanicParameterTable {
+      width: 65%;
+      padding-right: 10px;
+    }
+  
+    .mechanicParameterImage {
+      width: 35%;
+      border-left: 1px solid #ededed;
+      padding: 10px;
+    }
+  
+    .mechanicParameterImage img {
+      width: 100%;
+    }
+  
+    .paramTableBody,
+    .paramArmInfo {
+      height: 75%;
+      display: flex;
+      flex-direction: column;
+    }
+  
+    .paramArmInfo {
+      height: 25%;
+      padding-top: 10px;
+    }
+  
+    .paramTableBody div:nth-child(odd) {
+      background: #f5f5f5;
+    }
+  
+    .paramTableHeader div {
+      background: #f5f5f5;
+    }
+  
+    .paramTableBody div,
+    .paramTableHeader div,
+    .paramArmInfo div {
+      padding: 6px 10px;
+      height: 32px;
+      display: flex;
+      flex: 1;
+      align-items: center;
+    }
+  
+    .paramTableBody div>span,
+    .paramTableHeader div>span {
+      flex: 1;
+      text-align: center;
+    }
+  
+    .paramArmInfo div>span {
+      width: 25%;
+    }
+  
+    .paramArmInfo div>span:first-child {
+      width: 35%;
+    }
+  
+    .mechanicArmInfo {
+      width: 100%;
+      height: 50%;
+      display: flex;
+      padding: 0 30px;
+      border-top: 1px solid #ededed;
+    }
+  
+    .armValueWrap {
+      width: 50%;
+      height: 100%;
+    }
+  
+    .armRealtimeInfo {
+      display: flex;
+      height: calc(100% - 40px);
+    }
+  
+    .colAlignStyle {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+  
+    .colAlignStyle div {
+      /* flex: 1; */
+      align-items: center;
+      display: flex;
+      height: 30px;
+    }
+  
+    .colAlignStyle div span:first-child {
+      width: 75%;
+    }
+  
+    .panel-heading {
+      padding-left: 24px;
+      background-color: #475dc2;
+      color: #f5f5f5;
+      font-size: 14px;
+    }
+  
+    .armTitle {
+      font-size: 14px;
+      font-weight: bold;
+      color: #475dc2;
+      height: 40px;
+      line-height: 40px;
+    }
+  
+    .mechanicStatusWrap .staticIcon {
+      position: relative;
+      width: 70px;
+      height: 70px;
+      background-color: rgba(0, 177, 118, 0.08);
+      border-radius: 100%;
+      margin: 20px;
+      text-align: center;
+      line-height: 70px;
+    }
+  
+    .mechanicStatusWrap .mechanicStatus:last-child .staticIcon {
+      background-color: rgba(71, 93, 194, 0.08);
+    }
+  
+    .mechanicStatusWrap .staticIcon::after {
+      content: " ";
+      position: absolute;
+      left: -15px;
+      top: -15px;
+      width: 100px;
+      height: 100px;
+      background-color: #00b176;
+      opacity: 0.06;
+      border-radius: 100%;
+    }
+  
+    .mechanicStatusWrap .mechanicStatus:last-child .staticIcon::after {
+      background-color: #475dc2;
+    }
+  
+    .mechanicStatus {
+      width: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #00b176;
+    }
+  
+    .mechanicStatus .iconfont {
+      font-size: 36px;
+    }
+  
+    .mechanicStatus:last-child {
+      color: #475dc2;
+    }
+  
+    .statusTxt {
+      font-size: 24px;
+      padding-left: 20px;
+    }
+  
+    .panel-heading span {
+      margin-left: 10px;
+    }
+  
+    .mechanicPlane .panel-body {
+      padding: 10px;
+    }
+  
+    .realValue {
+      color: #495abf;
+      text-decoration: underline;
+      font-weight: bold;
+    }
+  
+    .mechanicStatusWrap {
+      height: 50%;
+      display: flex;
+    }
+  
+    .armRealtimeInfo .colAlignStyle:first-child {
+      width: 40%;
+    }
+  
+    .armRealtimeInfo .colAlignStyle:nth-child(2) {
+      width: 60%;
+    }
+  
+    .armValueWrap:first-child {
+      width: 65%;
+    }
+  
+    .armValueWrap:last-child {
+      width: 35%;
+    }
+  
+    @media screen and (max-width:1368px) {
+      .mechanicArmInfo {
+        padding: 0 5px;
+      }
+      .colAlignStyle div span:first-child {
+        width: 70%;
+      }
+      .mechanicParameterImage {
+        width: 30%;
+        padding: 0;
+        padding-top: 10px;
+      }
+      .mechanicParameterTable {
+        width: 70%;
+      }
+      .mechanicStatusWrap {
+        height: 35%;
+      }
+      .mechanicArmInfo {
+        height: 65%;
+      }
+      .mechanicStatusWrap .staticIcon {
+        width: 40px;
+        height: 40px;
+        line-height: 40px
+      }
+      .mechanicStatusWrap .staticIcon::after {
+        width: 70px;
+        height: 70px;
+      }
+      .armTitle {
+        height: 30px;
+      }
+      .armRealtimeInfo {
+        display: block;
+        height: calc(100% - 30px);
+      }
+      .colAlignStyle div {
+        height: 25px;
+      }
+      .colAlignStyle {
+        height: fit-content;
+      }
+      .armRealtimeInfo .colAlignStyle:first-child {
+        width: 100%;
+      }
+      .armRealtimeInfo .colAlignStyle:nth-child(2) {
+        width: 100%;
+      }
+      .armValueWrap:first-child {
+        width: 55%;
+      }
+      .armValueWrap:last-child {
+        width: 45%;
+      }
+    }
+  </style>
+  <div class="mechanicPlane">
+    <div class="mechanicModule">
+      <div class="mechanicCard" style="width:calc(50% - 5px); margin-right:10px">
+        <div class="panel-heading">Robotic Arm</div>
+        <div class="panel-body" style="height:calc(100% - 40px);">
+          <div class="mechanicStatusWrap">
+            <div class="mechanicStatus">
+              <div class="staticIcon">
+                <span class="iconfont icon-kaishi"></span>
+              </div>
+              <div class="statusTxt">Running</div>
+            </div>
+            <div class="mechanicStatus">
+              <div class="staticIcon">
+                <span class="iconfont icon-weibiaoti--"></span>
+              </div>
+              <div class="statusTxt">Good</div>
+            </div>
+          </div>
+          <div class="mechanicArmInfo">
+            <div class="armValueWrap">
+              <div class="armTitle">Today</div>
+              <div class="armRealtimeInfo"></div>
+            </div>
+            <div class="armValueWrap">
+              <div class="armTitle">Accumulated</div>
+              <div class="armTotalInfo colAlignStyle" style="height: calc(100% - 40px);">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mechanicCard" style="width:calc(50% - 5px);">
+        <div class="panel-heading">Parameter</div>
+        <div class="panel-body" style="height:calc(100% - 40px);display:flex;">
+          <div class="mechanicParameterTable">
+            <div class="paramTableHeader"></div>
+            <div class="paramTableBody"></div>
+            <div class="paramArmInfo"></div>
+          </div>
+          <div class="mechanicParameterImage">
+            <img src="http://beopwebbak.oss-cn-hangzhou.aliyuncs.com/beopWeb/static/images/OReal/Aubo-Robot-Main-small.jpg" alt="">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mechanicModule" data-module="history" style="padding-top:10px">
+      <div class="mechanicCard">
+        <div class="panel-heading">History
+          <span class="iconfont icon-nav_help" data-toggle="tooltip" data-placement="right" title="There exits reasonable intrevals for current of robotic arm loacated different position. The BeOP energine learns those intervals from history data distribution. When the current is continuously out of the interval, the system is abnormal."></span>
+        </div>
+        <div class="" style="height:calc(100% - 40px);display:flex;">
+          <div class="mechanicHistoryNav"></div>
+          <div class="mechanicHistoryChart"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    let projectId = 850;
+    class MechanicDetailScreen {
+      constructor() {
+        this.point = [{
+          pallet: "V_I_d",
+          layers: "V_I_h",
+          totalLayers: "V_I_n",
+          boxesPallet: "V_I_nn",
+          workHours: "runhour",
+          param: [{
+            name: "Joint1",
+            current: "joint1_current",
+            angle: "joint1_angle",
+          }, {
+            name: "Joint2",
+            current: "joint2_current",
+            angle: "joint2_angle",
+          }, {
+            name: "Joint3",
+            current: "joint3_current",
+            angle: "joint3_angle",
+          }, {
+            name: "Joint4",
+            current: "joint4_current",
+            angle: "joint4_angle",
+          }, {
+            name: "Joint5",
+            current: "joint5_current",
+            angle: "joint5_angle",
+          }, {
+            name: "Joint6",
+            current: "joint6_current",
+            angle: "joint6_angle",
+          }]
+        }]
+      }
+      show() {
+        this.init()
+      }
+      init() {
+        this.initMechanicStatic();
+        this.initHistoryNav();
+        this.initParameterTable();
+        this.initMechanicArmInfo();
+      }
+      initMechanicStatic() {
+        let point = ["isError", "onoff"];
+        let psPoint = point.map(v => `@${projectId}|${v}`);
+        this.requestRealtimeValue(psPoint).done(rs => {
+          let rsData = rs.dsItemList;
+          let leftStatus = {
+              0: "Stop",
+              1: "Running"
+            },
+            rightStatus = {
+              0: "Good",
+              1: "Fault"
+            }
+          $(".mechanicStatusWrap").empty().append(
+            `<div class="mechanicStatus">
+                  <div class="staticIcon">
+                    <span class="iconfont ${rsData[0].data? "icon-zanting" : "icon-kaishi"} "></span>
+                  </div>
+                  <div class="statusTxt">${leftStatus[rsData[0].data]}</div>
+                </div>
+                <div class="mechanicStatus">
+                  <div class="staticIcon">
+                    <span class="iconfont ${rsData[1].data? "icon-cuowu1" : "icon-weibiaoti--"} "></span>
+                  </div>
+                  <div class="statusTxt">${rightStatus[rsData[1].data]}</div>
+                </div>`
+          );
+        })
+      }
+      initMechanicArmInfo() {
+        let armRealtimeInfo = $(".armRealtimeInfo");
+        let data = this.point[0];
+        let psKey = ["pallet", "layers", "totalLayers", "boxesPallet", "workHours"];
+        let psPoint = psKey.map(v => `@${projectId}|${data[v]}`);
+        let params = {
+          "pointList": [`${data["pallet"]}`],
+          projectId: projectId,
+          prop: {},
+          "timeStart": moment().subtract(7, 'days').format("YYYY-MM-DD 23:55:55"),
+          "timeEnd": moment().subtract(7, 'days').format("YYYY-MM-DD 23:55:55"),
+          "timeFormat": "d1"
+        };
+        params = {
+          "dsItemIds": [`@${projectId}|V_I_d`],
+          "timeStart": moment().subtract(7, 'days').format("YYYY-MM-DD HH:mm:ss"),
+          "timeEnd": moment().format("YYYY-MM-DD HH:mm:ss"),
+          "timeFormat": "d1",
+        }
+        let preRequest = [];
+        preRequest.push(this.requestRealtimeValue(psPoint));
+        preRequest.push(this.requestAssignTimeValue(params));
+        $.when.apply(this, preRequest).done((rs1, rs2) => {
+          let rs1Data = rs1[0].dsItemList;
+          let dom =
+            `<div class="colAlignStyle" style="margin-right: 5%;">
+                        <div><span>Task</span><span>Pallet</span></div>
+                        <div><span>Pallets done (pcs)</span><span>500</span></div>
+                      </div>
+                      <div class="colAlignStyle">
+                        <div><span>Current layers (pcs)</span><span class="realValue">${rs1Data[1].data}</span></div>
+                        <div><span>Current boxes on layer (pcs)</span><span class="realValue">${rs1Data[2].data}</span></div>
+                        <div><span>Current boxed on pallet (pcs)</span><span class="realValue">${rs1Data[3].data}</span></div>
+                      </div>`;
+          armRealtimeInfo.empty().append(dom);
+          let rs2Data = rs2[0].list[0].data;
+          let sum = rs2Data.reduce((p, n) => p + n);
+          $(".armTotalInfo").empty().append(
+            ` <div><span>Pallets done (pcs)</span><span class="realValue">${rs1Data[0].data}</span></div>
+                        <div><span>7-days productivity (pcs)</span><span  class="realValue">${sum}</span></div>
+                        <div><span>Working hours (h)</span><span  class="realValue">${rs1Data[4].data}</span></div>`
+          )
+        })
+      }
+  
+      initParameterTable() {
+        let tableWrap = $(".paramTableBody");
+        tableWrap.empty().append(`<div><span>Name</span><span>Angle (deg)</span><span>Current (mA)</span></div>`);
+        let data = this.point[0].param,
+          psPoint = [];
+        data.forEach(v => {
+          psPoint.push(`@${projectId}|${v.angle}`);
+          psPoint.push(`@${projectId}|${v.current}`);
+        });
+        this.requestRealtimeValue(psPoint).done(rs => {
+          let rsData = rs.dsItemList;
+          rsData = rsData.map(v => Math.floor(v.data) == Number(v.data) ? v.data : Number(v.data).toFixed(2));
+          data.forEach((v, i) => {
+            tableWrap.append(
+              `<div><span>${v.name}</span><span>${rsData[2*i]?rsData[2*i]:"-"}</span><span>${rsData[2*i+1]?rsData[2*i+1]:"-"}</span></div>`
+            );
+          })
+        });
+        let armParam = ["posX", "posY", "posZ", "RX", "RY", "RZ"];
+        this.requestRealtimeValue(armParam.map(v => `@${projectId}|${v}`)).done(rs => {
+          let rsData = rs.dsItemList;
+          rsData = rsData.map(v => Number(v.data).toFixed(2));
+          $(".paramArmInfo").append(
+            `<div><span>Position (m)</span><span>X: ${rsData[0]?rsData[0]:"-"}</span><span>Y: ${rsData[1]?rsData[1]:"-"}</span><span>Z: ${rsData[2]?rsData[2]:"-"}</span></div>
+                  <div><span>Posture (deg)</span><span>RX: ${rsData[3]?rsData[3]:"-"}</span><span>RY: ${rsData[4]?rsData[4]:"-"}</span><span>RZ: ${rsData[5]?rsData[5]:"-"}</span></div>`
+          );
+        })
+      }
+  
+      attachEvent() {
+        $(".mechanicNavStyle").off("click").on("click", (e) => {
+          $(e.currentTarget).addClass("active").siblings().removeClass("active");
+          let point = e.currentTarget.dataset.point;
+          this.requestHistoryValue(point);
+        })
+      }
+      initHistoryNav() {
+        let wrap = $(".mechanicHistoryNav");
+        this.point[0].param.forEach(item => {
+          wrap.append(`<div class="mechanicNavStyle" data-point="${item.current}">${item.name}</div>`);
+        });
+        wrap.find(".mechanicNavStyle")[0].classList.add("active");
+        this.requestHistoryValue(this.point[0].param[0].current);
+        this.attachEvent();
+      }
+      requestRealtimeValue(points = []) {
+        let postData = {
+          dsItemIds: points
+        }
+        return WebAPI.post("/analysis/startWorkspaceDataGenPieChart", postData);
+      }
+      requestAssignTimeValue(params) {
+        return WebAPI.post('/analysis/startWorkspaceDataGenHistogram/increment/v2', params)
+      }
+      requestHistoryValue(point) {
+        let postData = {
+          dsItemIds: [`@${projectId}|${point}`],
+          timeStart: new Date(Date.now() - 86400000 * 5).format("yyyy-MM-dd HH:mm:ss"),
+          timeEnd: new Date().format("yyyy-MM-dd HH:mm:ss"),
+          timeFormat: 'm5'
+        }
+        let params = {
+          "pointList": [`${point}`, "current_bounds", "V_I_nn"],
+          projectId: projectId,
+          prop: {},
+          "timeStart": moment().subtract(30, 'minutes').format("YYYY-MM-DD HH:mm:ss"),
+          "timeEnd": moment().format("YYYY-MM-DD HH:mm:ss"),
+          "timeFormat": "s1"
+        };
+
+        WebAPI.post("/get_history_data_padded", params).done(rs => {
+          this.initHistoryChart(rs, point);
+        })
+      }
+      initHistoryChart(rs, point) {
+        if (!(rs && rs[0] && rs[0].history)) return;
+        let current = rs.filter(item => item.name == point)[0].history.map(v => v.value);
+        let currentIndex = rs.filter(item => item.name == "V_I_nn")[0].history.map(v => v.value);
+        let limitData = rs.filter(item => item.name == "current_bounds");
+        let limitArr, limitJson;
+        if (limitData.length > 0) {
+          limitData = limitData[0].history[0].value;
+          try {
+            limitJson = JSON.parse(limitData);
+          } catch (err) {
+            console.log(err);
+          }
+          limitArr = limitJson[point];
+        } else {
+          limitArr = "";
+        }
+        let timeShaft = rs[0].history.map(v => v.time.split(" ")[1]);
+        let candlestickData, top, bottom, upperLimit, lowerLimit;
+  
+        if (limitArr && limitArr.length > 0) {
+          upperLimit = currentIndex.map(v => limitArr[Number(v)][1]);
+          lowerLimit = currentIndex.map(v => limitArr[Number(v)][0]);
+          let maxData = parseInt(Math.max(...current, ...upperLimit, ...lowerLimit));
+          let minData = parseInt(Math.min(...current, ...upperLimit, ...lowerLimit));
+          candlestickData = upperLimit.map((v, i) => {
+            let value;
+            value = [lowerLimit[i], v, lowerLimit[i], v];
+            return {
+              value: value,
+            }
+          })
+        }
+        let visualMapData = []
+        let seriesCurrent = current.map((v, i) => {
+          let color = "#495ABF",
+            symbol = "none";
+          if (v > upperLimit[i] || v < lowerLimit[i]) {
+            color = "#F5483B";
+            symbol = "rect";
+          }
+          if (i == 0) {
+            visualMapData.push({
+              lte: i,
+              color: color
+            })
+          } else {
+            visualMapData.push({
+              gt: i - 1,
+              lte: i,
+              color: color
+            })
+          }
+  
+          return {
+            value: v,
+            symbol: symbol,
+          }
+        })
+  
+        const getColors = (data) => {
+          var arr = [];
+          for (var i = 1; i < data.length; i++) {
+            var style_start = {};
+            var style_end = {};
+            if (data[i] > data[i - 1]) {
+              style_start.color = "red";
+            } else {
+              style_start.color = "green";
+            }
+            style_end.color = style_start.color;
+            style_start.offset = (i - 1) / (data.length - 1);
+            style_end.offset = i / (data.length - 1);
+            arr.push(style_start, style_end);
+          }
+          console.log(arr)
+          return arr;
+        }
+        let option = {
+          backgroundColor: "#fff",
+          "tooltip": {
+            "trigger": "axis",
+            "axisPointer": {
+              "type": "shadow",
+              textStyle: {
+                color: "#fff"
+              }
+            },
+            formatter: function (param) {
+              let color = param[0].color;
+              let index = param[0].dataIndex;
+              let dom = `${param[0].axisValueLabel} <br>`;
+              if (param[1].data > upperLimit[index] || param[1].data < lowerLimit[index]) {
+                color = "#EBEBF0";
+              }
+              if (param[0] && lowerLimit.length > 0 && upperLimit.length > 0) {
+                dom +=
+                  `<span style="display:inline-block;padding-right:6px;width:10px;height:10px;background:${color};opacity:1"></span>
+                        Range: ${lowerLimit[index]}~${upperLimit[index]}<br>`;
+              }
+              dom +=
+                `<span style="display:inline-block;padding-right:6px;width:10px;height:10px;background:${param[1].color }"></span> ${param[1].seriesName}: ${param[1].data.value}`;
+              return dom
+            },
+          },
+  
+          grid: {
+            top: 60,
+            bottom: 10,
+            left: 20,
+            right: 35,
+            containLabel: true
+          },
+          "legend": {
+            "top": 15,
+            "icon": 'circle',
+            "itemHeight": 8,
+            "data": ['Current', 'Normal Range']
+          },
+          dataZoom: [{
+            startValue: timeShaft[0]
+          }, {
+            type: 'inside'
+          }],
+          visualMap: {
+            show: false,
+            dimension: 0,
+            pieces: visualMapData,
+            seriesIndex: 1,
+            orient: 'horizontal'
+          },
+          "calculable": true,
+          "xAxis": [{
+            "type": "category",
+            "axisLine": {
+              "lineStyle": {
+                "color": '#e8e8e8'
+              }
+            },
+            "splitLine": {
+              "show": false
+            },
+            "axisTick": {
+              "show": false
+            },
+            "splitArea": {
+              "show": false
+            },
+            "axisLabel": {
+              "textStyle": {
+                "color": '#8a9aac',
+                "fontSize": 12
+              }
+            },
+            "data": timeShaft,
+          }],
+          "yAxis": [{
+            "type": "value",
+            "name": "mA",
+            "color": '#8a9aac',
+            // "max": "dataMax",
+            // "min": "dataMin",
+            "nameTextStyle": {
+              "color": '#8a9aac',
+            },
+            "splitLine": {
+              lineStyle: {
+                color: '#e8e8e8'
+              }
+            },
+            "axisLabel": {
+              "textStyle": {
+                "color": '#8a9aac',
+                "fontSize": 12
+              }
+            },
+            "axisLine": {
+              lineStyle: {
+                color: '#e8e8e8'
+              }
+            },
+            "axisTick": {
+              "show": false
+            },
+  
+            "splitArea": {
+              "show": false
+            },
+  
+          }],
+          "series": [{
+            name: "Normal Range",
+            type: 'candlestick',
+            barWidth: '100%',
+            large: false,
+            itemStyle: {
+              color0: "#EBEBF0",
+              borderColor0: "#EBEBF0",
+              color: '#EBEBF0',
+              borderColor: '#EBEBF0',
+              opacity: 0.8,
+            },
+            data: candlestickData ? candlestickData : [],
+            z: 1
+          }, {
+            "name": "Current",
+            "type": "line",
+            showAllSymbol: true,
+            itemStyle: {
+              "color": "#495ABF",
+            },
+            "lineStyle": {
+              "width": 1,
+            },
+            "data": seriesCurrent,
+            z: 2
+          }, ]
+        };
+        // console.log(JSON.stringify(candlestickData))
+        echarts.init($(".mechanicHistoryChart")[0]).setOption(option)
+      }
+    }
+    new MechanicDetailScreen().show();
+  </script>
+</body>
+</html>
