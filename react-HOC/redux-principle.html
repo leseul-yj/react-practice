@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>redux原理</title>
+</head>
+
+<body>
+  <div>
+    <button onclick="dispatch({type:'JIAN',n:3})">-</button>
+    <span id="countDisplay">10</span>
+    <button onclick="dispatch({type:'JIA',n:3})">+</button>
+  </div>
+</body>
+<script>
+  let countDisplay = document.getElementById("countDisplay")
+  let countState = {
+    count: 100
+  }
+
+  const renderCount = (state) => {
+    countDisplay.innerHTML = state.count;
+  }
+
+  const changeState = (action) => {
+    switch(action.type) {
+      case "JIAN": countState.count -= action.n;
+        break;
+      case "JIA": countState.count += action.n;
+        break;
+      default:
+        break;
+    }
+  }
+  const dispatch = (action) => {
+    changeState(action)
+    renderCount(countState)
+  }
+
+</script>
+
+</html>

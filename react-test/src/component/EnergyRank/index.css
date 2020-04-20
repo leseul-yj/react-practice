@@ -1,0 +1,9 @@
+.itemStyle{
+  display: flex;
+  margin-bottom: 5px;
+  border: 1px solid #efefef;
+}
+.itemStyle div{
+  
+  padding: 5px 15px;
+}
