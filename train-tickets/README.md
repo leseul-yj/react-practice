@@ -5,4 +5,6 @@
 + mkdir index
 + touch index.js App.css App.jsx reducers.js action.js store.js
 
-4.初始化index目录下的文件
+4. 初始化index目录下的文件
+5. 将index文件夹内容复制三份 cp -r index query
+6. 将public目录下的index.html也复制三份 分别为 tickets.html
