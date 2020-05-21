@@ -8,3 +8,4 @@
 4. 初始化index目录下的文件
 5. 将index文件夹内容复制三份 cp -r index query
 6. 将public目录下的index.html也复制三份 分别为 tickets.html
+7. 运行npm run eject 报错  需要把新创建的文件夹提交到仓库中
