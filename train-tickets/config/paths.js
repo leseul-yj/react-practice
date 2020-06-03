@@ -7,7 +7,7 @@ const getPublicUrlOrPath = require('react-dev-utils/getPublicUrlOrPath');
 // Make sure any symlinks in the project folder are resolved:
 // https://github.com/facebook/create-react-app/issues/637
 const appDirectory = fs.realpathSync(process.cwd());
-const resolveApp = relativePath => path.resolve(appDirectory, relativePath);
+const resolveApp = relativePath => path.resolve(appDirectory,relativePath);
 
 // We use `PUBLIC_URL` environment variable or "homepage" field to infer
 // "public path" at which the app is served.
@@ -36,12 +36,12 @@ const moduleFileExtensions = [
 ];
 
 // Resolve file paths in the same order as webpack
-const resolveModule = (resolveFn, filePath) => {
+const resolveModule = (resolveFn,filePath) => {
   const extension = moduleFileExtensions.find(extension =>
     fs.existsSync(resolveFn(`${filePath}.${extension}`))
   );
 
-  if (extension) {
+  if(extension) {
     return resolveFn(`${filePath}.${extension}`);
   }
 
@@ -54,14 +54,23 @@ module.exports = {
   appPath: resolveApp('.'),
   appBuild: resolveApp('build'),
   appPublic: resolveApp('public'),
+
   appHtml: resolveApp('public/index.html'),
-  appIndexJs: resolveModule(resolveApp, 'src/index'),
+  appQueryHtml: resolveApp('public/query.html'),
+  appTicketHtml: resolveApp('public/ticket.html'),
+  appOrderHtml: resolveApp('public/order.html'),
+
+  appIndexJs: resolveModule(resolveApp,'src/index/index'),
+  appQueryJs: resolveModule(resolveApp,'src/query/index'),
+  appTicketJs: resolveModule(resolveApp,'src/ticket/index'),
+  appOrderJs: resolveModule(resolveApp,'src/order/index'),
+
   appPackageJson: resolveApp('package.json'),
   appSrc: resolveApp('src'),
   appTsConfig: resolveApp('tsconfig.json'),
   appJsConfig: resolveApp('jsconfig.json'),
   yarnLockFile: resolveApp('yarn.lock'),
-  testsSetup: resolveModule(resolveApp, 'src/setupTests'),
+  testsSetup: resolveModule(resolveApp,'src/setupTests'),
   proxySetup: resolveApp('src/setupProxy.js'),
   appNodeModules: resolveApp('node_modules'),
   publicUrlOrPath,
