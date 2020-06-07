@@ -1,8 +1,19 @@
 import {connect} from 'react-redux';
 import './App.css';
-
+import Header from '../common/Header';
+import Journey from './journey';
+import DepartDate from './departDate';
+import HighSpeedRail from './highSpeedRail';
+import Submit from './submit';
 function App(props) {
-
+  return (
+    <div>
+      <Header></Header>
+      <Journey></Journey>
+      <DepartDate></DepartDate>
+      <Submit></Submit>
+    </div>
+  )
 }
 const mapStateToProps = (state,ownProps) => {
   return {
