@@ -34,10 +34,10 @@ const createDevServerConfig = require('../config/webpackDevServer.config');
 
 const useYarn = fs.existsSync(paths.yarnLockFile);
 const isInteractive = process.stdout.isTTY;
+
 // Warn and crash if required files are missing
 if(!checkRequiredFiles([paths.appHtml,paths.appIndexJs])) {
   process.exit(1);
-
 }
 
 // Tools like Cloud9 rely on this.
@@ -60,7 +60,7 @@ if(process.env.HOST) {
   );
   console.log();
 }
-console.log("1111111")
+
 // We require that you explicitly set browsers and do not fall back to
 // browserslist defaults.
 const {checkBrowsers} = require('react-dev-utils/browsersHelper');
@@ -75,10 +75,8 @@ checkBrowsers(paths.appPath,isInteractive)
       // We have not found a port.
       return;
     }
-    console.log("paths.publicUrlOrPath",paths.publicUrlOrPath)
-    console.log("configFactory",JSON.stringify(configFactory))
-    const config = configFactory('development');
 
+    const config = configFactory('development');
     const protocol = process.env.HTTPS === 'true' ? 'https' : 'http';
     const appName = require(paths.appPackageJson).name;
     const useTypeScript = fs.existsSync(paths.appTsConfig);
@@ -89,7 +87,6 @@ checkBrowsers(paths.appPath,isInteractive)
       port,
       paths.publicUrlOrPath.slice(0,-1)
     );
-    console.log("appName",appName)
     const devSocket = {
       warnings: warnings =>
         devServer.sockWrite(devServer.sockets,'warnings',warnings),
@@ -119,7 +116,6 @@ checkBrowsers(paths.appPath,isInteractive)
       proxyConfig,
       urls.lanUrlForConfig
     );
-
     const devServer = new WebpackDevServer(compiler,serverConfig);
     // Launch WebpackDevServer.
     devServer.listen(port,HOST,err => {

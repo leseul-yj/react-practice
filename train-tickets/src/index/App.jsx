@@ -1,3 +1,4 @@
+import React from 'react';
 import {connect} from 'react-redux';
 import './App.css';
 import Header from '../common/Header';
@@ -23,7 +24,7 @@ const mapStateToProps = (state,ownProps) => {
 const mapDispatchToProps = (dispatch,ownProps) => {
   return {
     dispatch1: () => {
-      dispatch(actionCreator)
+      dispatch()
     }
   }
 }
