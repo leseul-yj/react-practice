@@ -2,12 +2,12 @@ const webpack = require("webpack");
 const merge = require("webpack-merge");
 const base = require("./webpack.base").default;
 const HtmlWebpackHarddiskPlugin = require("html-webpack-harddisk-plugin");
-const port = "5005";
+const port = "5009";
 
-exports.default = merge(base, {
+exports.default = merge(base,{
     mode: "development",
-    module:{
-        rules:[
+    module: {
+        rules: [
             {
                 test: /\.svg(\?v=\d+\.\d+\.\d+)?$/,
                 use: {
@@ -46,7 +46,7 @@ exports.default = merge(base, {
         disableHostCheck: true,
         historyApiFallback: {
             verbose: true,
-            index: "/view/index.html"
+            index: "./index.html"
         },
         publicPath: "/dist"
     }
