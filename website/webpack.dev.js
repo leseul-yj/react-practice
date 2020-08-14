@@ -41,7 +41,7 @@ exports.default = merge(base,{
     devServer: {
         hot: true,
         port,
-        host: "0.0.0.0",
+        host: "localhost",
         inline: true,
         disableHostCheck: true,
         historyApiFallback: {
