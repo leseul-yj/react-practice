@@ -7,5 +7,4 @@ import 'normalize.css/normalize.css';
 import App from './App.jsx';
 
 ReactDOM.render(
-  <Provider><App /></Provider>
-  ,document.getElementById('root'))
+  <Provider store={store}><App /></Provider>,document.getElementById('root'))

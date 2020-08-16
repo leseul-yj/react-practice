@@ -8,13 +8,43 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const {
     CleanWebpackPlugin
 } = require("clean-webpack-plugin");
-const chunks = {
-    index: [path.join(__dirname,"./src/index/index.js")],
-    ticket: [path.join(__dirname,"./src/ticket/index.js")],
-    order: [path.join(__dirname,"./src/order/index.js")],
-    query: [path.join(__dirname,"./src/query/index.js")]
-};
 
+// 多页面应用
+const setMap = () => {
+    const chunks = {
+        index: [path.join(__dirname,"./src/index/index.js")],
+        ticket: [path.join(__dirname,"./src/ticket/index.js")],
+        order: [path.join(__dirname,"./src/order/index.js")],
+        query: [path.join(__dirname,"./src/query/index.js")]
+    };
+    const htmlWebpackPlugins = [];
+    Object.keys(chunks).map(item => {
+        htmlWebpackPlugins.push(new HtmlWebpackPlugin({
+            title: `${item}`,
+            template: `./public/${item}.ejs`,
+            favicon: "./public/favicon.ico",
+            filename: `./${item}.html`,//打包后的文件名称
+            chunks: [item],
+            chunksSortMode: "manual",
+            alwaysWriteToDisk: true,
+            hash: true,
+            inject: true,//是否自动引入相关的css,js文件
+            minify: {//是否使用文件压缩
+                html5: true,
+                collapseWhitespace: true,
+                preserveLineBreaks: false,
+                minifyCSS: true,
+                minifyJS: true,
+                removeComments: false
+            }
+        }))
+    });
+    return {
+        chunks,
+        htmlWebpackPlugins
+    }
+}
+const {chunks,htmlWebpackPlugins} = setMap();
 exports.default = {
     entry: chunks,
     output: {
@@ -115,59 +145,37 @@ exports.default = {
         }
         ]
     },
+    optimization: {
+        splitChunks: {
+            chunks: 'async',
+            minSize: 30000,
+            minChunks: 1,
+            maxAsyncRequests: 5,
+            maxInitialRequests: 3,
+            automaticNameDelimiter: '~',
+            name: true,
+            cacheGroups: {
+                vendors: {
+                    test: /[\\/]node_modules[\\/]/,
+                    priority: -10
+                },
+                default: {
+                    minChunks: 2,
+                    priority: -20,
+                    reuseExistingChunk: true
+                }
+            }
+        }
+    },
     resolve: {
         extensions: [".js",".jsx",".json",".css",".less"],
         modules: [__dirname,"node_modules",path.resolve(__dirname,"./src/index"),path.resolve(__dirname,"./src/ticket")]
     },
     plugins: [
         new CleanWebpackPlugin(),
-        new HtmlWebpackPlugin({
-            favicon: "./public/favicon.ico",
-            hash: true,
-            title: "home",
-            filename: "./index.html",
-            template: "./public/index.ejs",
-            alwaysWriteToDisk: true,
-            chunks: ["index"],
-            chunksSortMode: "manual",
-            inject: false
-        }),
-        new HtmlWebpackPlugin({
-            favicon: "./public/favicon.ico",
-            hash: true,
-            title: "ticket",
-            filename: "./ticket.html",
-            template: "./public/ticket.ejs",
-            alwaysWriteToDisk: true,
-            chunks: ["ticket"],
-            chunksSortMode: "manual",
-            inject: false
-        }),
-        new HtmlWebpackPlugin({
-            favicon: "./public/favicon.ico",
-            hash: true,
-            title: "home",
-            filename: "./order.html",
-            template: "./public/order.ejs",
-            alwaysWriteToDisk: true,
-            chunks: ["order"],
-            chunksSortMode: "manual",
-            inject: false
-        }),
-        new HtmlWebpackPlugin({
-            favicon: "./public/favicon.ico",
-            hash: true,
-            title: "home",
-            filename: "./query.html",
-            template: "./public/query.ejs",
-            alwaysWriteToDisk: true,
-            chunks: ["query"],
-            chunksSortMode: "manual",
-            inject: false
-        }),
         new webpack.ProvidePlugin({
             $: "jquery",
             jQuery: "jquery"
         })
-    ]
+    ].concat(htmlWebpackPlugins)
 };

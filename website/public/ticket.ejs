@@ -36,5 +36,8 @@
       To create a production bundle, use `npm run build` or `yarn build`.
     -->
 </body>
+<% for(var i=0, len=htmlWebpackPlugin.files.js.length; i<len; i++) {%>
+<script type="text/javascript" src="<%= htmlWebpackPlugin.files.js[i] %>"></script>
+<% } %>
 
 </html>
