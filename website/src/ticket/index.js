@@ -6,4 +6,6 @@ import store from './store';
 import 'normalize.css/normalize.css';
 import App from './App.jsx';
 
-ReactDOM.render(<App />,document.getElementById('root'))
+ReactDOM.render(
+  <Provider><App /></Provider>
+  ,document.getElementById('root'))

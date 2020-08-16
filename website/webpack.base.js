@@ -10,7 +10,9 @@ const {
 } = require("clean-webpack-plugin");
 const chunks = {
     index: [path.join(__dirname,"./src/index/index.js")],
-    ticket: [path.join(__dirname,"./src/order/index.js")]
+    ticket: [path.join(__dirname,"./src/ticket/index.js")],
+    order: [path.join(__dirname,"./src/order/index.js")],
+    query: [path.join(__dirname,"./src/query/index.js")]
 };
 
 exports.default = {
@@ -138,6 +140,28 @@ exports.default = {
             template: "./public/ticket.ejs",
             alwaysWriteToDisk: true,
             chunks: ["ticket"],
+            chunksSortMode: "manual",
+            inject: false
+        }),
+        new HtmlWebpackPlugin({
+            favicon: "./public/favicon.ico",
+            hash: true,
+            title: "home",
+            filename: "./order.html",
+            template: "./public/order.ejs",
+            alwaysWriteToDisk: true,
+            chunks: ["order"],
+            chunksSortMode: "manual",
+            inject: false
+        }),
+        new HtmlWebpackPlugin({
+            favicon: "./public/favicon.ico",
+            hash: true,
+            title: "home",
+            filename: "./query.html",
+            template: "./public/query.ejs",
+            alwaysWriteToDisk: true,
+            chunks: ["query"],
             chunksSortMode: "manual",
             inject: false
         }),
