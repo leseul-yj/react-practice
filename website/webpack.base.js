@@ -73,12 +73,12 @@ exports.default = {
         },
         {
             test: /\.less$/,
-            include: [path.resolve(__dirname,"node_modules"),path.resolve(__dirname,"src/theme")],
-            use: ["style-loader","css-loader","less-loader"]
+            include: [path.resolve(__dirname,"node_modules")],
+            use: ["style-loader","css-loader","less-loader"],
         },
         {
             test: /\.less$/,
-            exclude: [path.resolve(__dirname,"node_modules"),path.resolve(__dirname,"src/theme")],
+            exclude: [path.resolve(__dirname,"node_modules")],
             use: [{
                 loader: "style-loader" // creates style nodes from JS strings
             },

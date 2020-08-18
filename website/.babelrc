@@ -1,3 +1,13 @@
 {
-  "presets": ["@babel/preset-env", "@babel/preset-react"]
+  "presets": ["@babel/preset-env", "@babel/preset-react"],
+  "plugins": [
+    [
+      "import",
+      {
+        "libraryName": "antd",
+        "style": "css"// 不能设置为true，不然antd引入报错
+      }
+    ]
+  ],
+  "sourceMaps": true
 }
