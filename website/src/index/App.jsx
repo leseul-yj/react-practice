@@ -5,11 +5,13 @@ import Header from '../common/Header';
 import Journey from './journey';
 import DepartDate from './departDate';
 import HighSpeedRail from './highSpeedRail';
+import Setting from './setting';
 import Submit from './submit';
 function App(props) {
   return (
     <div>
-      <Header></Header>
+      <Header> </Header>
+      <Setting></Setting>
       <Journey></Journey>
       <DepartDate></DepartDate>
       <Submit></Submit>
