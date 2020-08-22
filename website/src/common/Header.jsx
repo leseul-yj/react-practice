@@ -1,8 +1,8 @@
 import React from 'react';
-import './Header.css';
+import s from './Header.less';
 export default function Header(prop) {
   return (
-    <div>header</div>
+    <div className={s.headTitle}>Forword Chat</div>
   )
 }
 
