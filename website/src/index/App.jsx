@@ -1,6 +1,6 @@
 import React from 'react';
 import {connect} from 'react-redux';
-import './App.css';
+import s from './App.less';
 import Header from '../common/Header';
 import Journey from './journey';
 import DepartDate from './departDate';
@@ -10,7 +10,10 @@ import Submit from './submit';
 function App(props) {
   return (
     <div>
-      <Header> </Header>
+      <div className={s.navWrap}>
+        <Header> </Header>
+      </div>
+
       <Setting></Setting>
       <Journey></Journey>
       <DepartDate></DepartDate>
