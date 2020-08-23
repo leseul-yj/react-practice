@@ -2,22 +2,26 @@ import React from 'react';
 import {connect} from 'react-redux';
 import s from './App.less';
 import Header from '../common/Header';
-import Journey from './journey';
+import Tool from './tool';
 import DepartDate from './departDate';
-import HighSpeedRail from './highSpeedRail';
+import MyAvatar from './avatar';
 import Setting from './setting';
 import Submit from './submit';
 function App(props) {
   return (
-    <div>
+    <div className={s.containerWrap}>
       <div className={s.navWrap}>
         <Header> </Header>
+        <MyAvatar></MyAvatar>
+        <Tool></Tool>
+      </div>
+      <div className={s.chatWrap}>
+        <Setting></Setting>
+
+        <DepartDate></DepartDate>
+        <Submit></Submit>
       </div>
 
-      <Setting></Setting>
-      <Journey></Journey>
-      <DepartDate></DepartDate>
-      <Submit></Submit>
     </div>
   )
 }
