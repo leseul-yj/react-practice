@@ -23,7 +23,7 @@ function App(props) {
         <Module></Module>
       </div>
       <div className={s.chatWrap}>
-        <div className={s.divhatList}>
+        <div className={s.divchatList}>
           <ChatList></ChatList>
         </div>
         <div className={s.chatModule}>
