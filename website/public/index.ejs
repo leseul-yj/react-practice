@@ -8,11 +8,18 @@
   <meta name="description" content="Web site created using create-react-app" />
   <link rel="shortcut icon" href="./favicon.ico">
 
- 
+
   <title>React App</title>
 </head>
 
 <body>
+  <style>
+    #root {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
+  </style>
   <noscript>You need to enable JavaScript to run this app.</noscript>
   <div id="root"></div>
   <!--
@@ -27,6 +34,7 @@
     -->
 </body>
 <% for(var i=0, len=htmlWebpackPlugin.files.js.length; i<len; i++) {%>
-  <script type="text/javascript" src="<%= htmlWebpackPlugin.files.js[i] %>"></script>
-  <% } %>
+<script type="text/javascript" src="<%= htmlWebpackPlugin.files.js[i] %>"></script>
+<% } %>
+
 </html>

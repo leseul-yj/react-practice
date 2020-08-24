@@ -5,10 +5,12 @@ import Header from '../common/Header';
 import Tool from './tool';
 import FGNumber from './FGNumber';
 import Module from './module';
+
+import ChatList from 'chatList'
 import DepartDate from './departDate';
 import MyAvatar from './avatar';
 import Setting from './setting';
-import Submit from './submit';
+import Submit from './chatList';
 
 function App(props) {
   return (
@@ -21,9 +23,15 @@ function App(props) {
         <Module></Module>
       </div>
       <div className={s.chatWrap}>
-        <Setting></Setting>
-        <DepartDate></DepartDate>
-        <Submit></Submit>
+        <div className={s.divhatList}>
+          <ChatList></ChatList>
+        </div>
+        <div className={s.chatModule}>
+          <Setting></Setting>
+          <DepartDate></DepartDate>
+          <Submit></Submit>
+        </div>
+
       </div>
 
     </div>
