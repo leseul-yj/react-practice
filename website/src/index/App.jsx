@@ -3,10 +3,13 @@ import {connect} from 'react-redux';
 import s from './App.less';
 import Header from '../common/Header';
 import Tool from './tool';
+import FGNumber from './FGNumber';
+import Module from './module';
 import DepartDate from './departDate';
 import MyAvatar from './avatar';
 import Setting from './setting';
 import Submit from './submit';
+
 function App(props) {
   return (
     <div className={s.containerWrap}>
@@ -14,10 +17,11 @@ function App(props) {
         <Header> </Header>
         <MyAvatar></MyAvatar>
         <Tool></Tool>
+        <FGNumber></FGNumber>
+        <Module></Module>
       </div>
       <div className={s.chatWrap}>
         <Setting></Setting>
-
         <DepartDate></DepartDate>
         <Submit></Submit>
       </div>
