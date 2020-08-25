@@ -1,12 +1,12 @@
 import React from 'react';
 import s from './chatList.less';
 import {List,Avatar,Input} from 'antd';
-import { AudioOutlined } from '@ant-design/icons';
+import {AudioOutlined} from '@ant-design/icons';
 import {Link,Route} from "react-router-dom";
 
 import ChatPlane from './chatPlane';
 
-const { Search } = Input;
+const {Search} = Input;
 const suffix = (
   <AudioOutlined
     style={{
@@ -49,25 +49,25 @@ const data = [
   {
     title: '干将',
     userId: '10005',
-    avatar:"https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1598351789017&di=dda1d6f4585eaec89db3926165e137f9&imgtype=0&src=http%3A%2F%2Fdp.gtimg.cn%2Fdiscuzpic%2F0%2Fdiscuz_x5_gamebbs_qq_com_forum_201306_19_1256219xc797y90heepdbh.jpg%2F0",
+    avatar: "https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1598351789017&di=dda1d6f4585eaec89db3926165e137f9&imgtype=0&src=http%3A%2F%2Fdp.gtimg.cn%2Fdiscuzpic%2F0%2Fdiscuz_x5_gamebbs_qq_com_forum_201306_19_1256219xc797y90heepdbh.jpg%2F0",
     description: "历史记载胜者，并一道埋葬血色"
   },
   {
     title: '李信',
     userId: '10006',
-    avatar:"https://ss0.bdstatic.com/70cFvHSh_Q1YnxGkpoWK1HF6hhy/it/u=2811375664,2687366628&fm=26&gp=0.jpg",
+    avatar: "https://ss0.bdstatic.com/70cFvHSh_Q1YnxGkpoWK1HF6hhy/it/u=2811375664,2687366628&fm=26&gp=0.jpg",
     description: "昨夜的星辰辉映太古的缘起"
   },
   {
     title: 'Jennifer',
     userId: '10007',
-    avatar:"https://ss1.bdstatic.com/70cFuXSh_Q1YnxGkpoWK1HF6hhy/it/u=1416536552,3950553019&fm=26&gp=0.jpg",
+    avatar: "https://ss1.bdstatic.com/70cFuXSh_Q1YnxGkpoWK1HF6hhy/it/u=1416536552,3950553019&fm=26&gp=0.jpg",
     description: "SKIPPING OPTIONAL DEPENDENCY"
   },
   {
     title: 'Amy',
     userId: '10008',
-    avatar:"https://ss2.bdstatic.com/70cFuXSh_Q1YnxGkpoWK1HF6hhy/it/u=1416536552,3950553019&fm=26&gp=0.jpg",
+    avatar: "https://ss2.bdstatic.com/70cFuXSh_Q1YnxGkpoWK1HF6hhy/it/u=1416536552,3950553019&fm=26&gp=0.jpg",
     description: "No repository field"
   },
 ];
@@ -77,19 +77,19 @@ export default function ChatList(props) {
   return (
     <div className={s.chatListWrap}>
       <div className={s.searchWrap}>
-      <Search
-        placeholder="input search text"
-        onSearch={value => console.log(value)}
-        style={{ width: "90%" }}
-    />
+        <Search
+          placeholder="input search text"
+          onSearch={value => console.log(value)}
+          style={{width: "90%"}}
+        />
       </div>
       <div className={s.listWrap}>
         <List
           itemLayout="horizontal"
           dataSource={data}
           renderItem={item => (
-            <Link to={'/'+item.userId} >
-              <List.Item style={{padding:"15px", cursor:"pointer"}}>
+            <Link to={'/' + item.userId} >
+              <List.Item style={{padding: "15px",cursor: "pointer",borderBottom: "1px solid #f0f0f0;"}}>
                 <List.Item.Meta
                   avatar={<Avatar src={item.avatar} />}
                   title={<a href="https://ant.design">{item.title}</a>}
