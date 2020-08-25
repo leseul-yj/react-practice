@@ -10,8 +10,8 @@ import ChatList from 'chatList'
 import DepartDate from './departDate';
 import MyAvatar from './avatar';
 import Setting from './setting';
-import Submit from './chatList';
-
+import ChatPlane from './chatPlane';
+import { HashRouter as Router, Route, Switch, Link, withRouter } from 'react-router-dom';
 function App(props) {
   return (
     <div className={s.containerWrap}>
@@ -24,16 +24,16 @@ function App(props) {
       </div>
       <div className={s.chatWrap}>
         <div className={s.divchatList}>
+        <Router>
           <ChatList></ChatList>
+        </Router>
         </div>
         <div className={s.chatModule}>
-          <Setting></Setting>
-          <DepartDate></DepartDate>
-          <Submit></Submit>
+          <ChatPlane title="系统客服"></ChatPlane>
+          {/* <Setting></Setting>
+          <DepartDate></DepartDate> */}
         </div>
-
       </div>
-
     </div>
   )
 }
