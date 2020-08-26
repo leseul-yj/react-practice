@@ -2,16 +2,16 @@ import React from 'react';
 import {connect} from 'react-redux';
 import s from './App.less';
 import Header from '../common/Header';
-import Tool from './tool';
-import FGNumber from './FGNumber';
+import Tool from './nav/tool';
+import FGNumber from './nav/FGNumber';
 import Module from './module';
 
-import ChatList from 'chatList'
+import ChatList from './list/chatList'
 import DepartDate from './departDate';
-import MyAvatar from './avatar';
+import MyAvatar from './nav/avatar';
 import Setting from './setting';
 import ChatPlane from './chatPlane';
-import { HashRouter as Router, Route, Switch, Link, withRouter } from 'react-router-dom';
+import {Router} from 'react-router-dom';
 function App(props) {
   return (
     <div className={s.containerWrap}>
@@ -24,9 +24,9 @@ function App(props) {
       </div>
       <div className={s.chatWrap}>
         <div className={s.divchatList}>
-        <Router>
-          <ChatList></ChatList>
-        </Router>
+          <Router>
+            <ChatList></ChatList>
+          </Router>
         </div>
         <div className={s.chatModule}>
           <ChatPlane title="系统客服"></ChatPlane>

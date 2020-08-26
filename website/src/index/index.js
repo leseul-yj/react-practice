@@ -8,5 +8,6 @@ import store from './store';
 import 'normalize.css/normalize.css';
 import './index.css';
 import App from './App.jsx';
+import {Router} from 'react-router-dom';
 
-ReactDOM.render( <Provider store = { store } > <App /> </Provider>, document.getElementById('root'))
+ReactDOM.render(<Provider store={store} ><Router> <App /> </Router></Provider>,document.getElementById('root'))

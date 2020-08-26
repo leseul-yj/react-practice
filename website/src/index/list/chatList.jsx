@@ -4,7 +4,7 @@ import {List,Avatar,Input} from 'antd';
 import {AudioOutlined} from '@ant-design/icons';
 import {Link,Route} from "react-router-dom";
 
-import ChatPlane from './chatPlane';
+import ChatPlane from '../chatPlane';
 
 const {Search} = Input;
 const suffix = (
