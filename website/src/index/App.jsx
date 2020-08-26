@@ -11,7 +11,7 @@ import DepartDate from './departDate';
 import MyAvatar from './nav/avatar';
 import Setting from './setting';
 import ChatPlane from './chatPlane';
-import {Router} from 'react-router-dom';
+import {HashRouter as Router} from 'react-router-dom';
 function App(props) {
   return (
     <div className={s.containerWrap}>
