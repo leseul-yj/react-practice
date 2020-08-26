@@ -27,7 +27,7 @@ export default function ChatPlane(props) {
                         <PaperClipOutlined style={{fontSize: "26px"}} />
                     </span>
                 </div>
-                <div className={s.chatTextArea} contenteditable="true">
+                <div className={s.chatTextArea} contentEditable="true">
 
                 </div>
             </div>
