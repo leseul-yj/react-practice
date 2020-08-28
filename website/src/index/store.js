@@ -11,7 +11,7 @@ const initalState = {
   from: "北京",
   to: "上海",
   isCitySelectorVisible: false,
-  currentSelectingLeftCity: false,//是否城市交换
+  currentSelectingLeftCity: false, //是否城市交换
   cityData: null, // 异步加载城市数据
   isLoadingCityData: false, // 城市数据的状态
   isDateSelectorVisible: false, // 是否加载时间控件
