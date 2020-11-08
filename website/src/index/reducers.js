@@ -8,13 +8,14 @@ import {
   ACTION_SET_IS_DATE_SELECTOR_VISIBLE,
   ACTION_SET_HIGH_SPEED,
 } from './action';
+
 export default {
-  from(state = "北京", action) {
+  from(state = "北京",action) {
     const {
       type,
       payload
     } = action;
-    switch (type) {
+    switch(type) {
       case ACTION_SET_FROM:
         return payload;
         break;
@@ -22,12 +23,12 @@ export default {
         return state;
     }
   },
-  to(state = "上海", action) {
+  to(state = "上海",action) {
     const {
       type,
       payload
     } = action;
-    switch (type) {
+    switch(type) {
       case ACTION_SET_TO:
         return payload;
         break;
@@ -35,12 +36,12 @@ export default {
         return state;
     }
   },
-  isCitySelectorVisible(state = false, action) {
+  isCitySelectorVisible(state = false,action) {
     const {
       type,
       payload
     } = action;
-    switch (type) {
+    switch(type) {
       case ACTION_SET_IS_CITY_SELECTOR_VISIBLE:
         return payload;
         break;
@@ -48,12 +49,12 @@ export default {
         return state;
     }
   },
-  currentSelectingLeftCity(state = false, action) {
+  currentSelectingLeftCity(state = false,action) {
     const {
       type,
       payload
     } = action;
-    switch (type) {
+    switch(type) {
       case ACTION_SET_CURRENT_SELECTING_LEFT_CITY:
         return payload
         break;
@@ -61,12 +62,12 @@ export default {
         return state;
     }
   },
-  cityData(state = "", action) {
+  cityData(state = "",action) {
     const {
       type,
       payload
     } = action;
-    switch (type) {
+    switch(type) {
       case ACTION_SET_CITYDATA:
         return payload;
         break;
@@ -74,12 +75,12 @@ export default {
         return state;
     }
   },
-  isLoadingCityData(state = false, action) {
+  isLoadingCityData(state = false,action) {
     const {
       type,
       payload
     } = action;
-    switch (type) {
+    switch(type) {
       case ACTION_SET_IS_LOADING_CITYDATA:
         return payload;
         break;
@@ -87,12 +88,12 @@ export default {
         return state;
     }
   },
-  isDateSelectorVisible(state = false, action) {
+  isDateSelectorVisible(state = false,action) {
     const {
       type,
       payload
     } = action;
-    switch (type) {
+    switch(type) {
       case ACTION_SET_IS_DATE_SELECTOR_VISIBLE:
         return payload;
         break;
@@ -100,12 +101,12 @@ export default {
         return state;
     }
   },
-  highSpeed(state = false, action) {
+  highSpeed(state = false,action) {
     const {
       type,
       payload
     } = action;
-    switch (type) {
+    switch(type) {
       case ACTION_SET_HIGH_SPEED:
         return payload;
         break;
